@@ -5,6 +5,9 @@ venv/
 env/
 .env_python/
 
+__pycache__/
+*.py[cod]
+
 # dependencies
 /node_modules
 /.pnp
