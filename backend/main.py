@@ -2,7 +2,7 @@ from fastapi import Depends, FastAPI, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import text 
 from sqlalchemy.exc import IntegrityError
-
+from typing import List
 import models
 import schemas
 import crud
@@ -59,3 +59,8 @@ def create_seat(seat: schemas.SeatCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_seat)
     return db_seat
+
+@app.get("/api/reservations", response_model=List[schemas.ReservationStatus])
+def read_reservations(skip : int =0, limit : int =100, db: Session = Depends(get_db)):
+    reservations = crud.get_reservation(db=db, skip=skip, limit=limit)
+    return reservations

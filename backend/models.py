@@ -35,7 +35,7 @@ class Reservation(base):
     res_start_time : Mapped[datetime] = mapped_column(DateTime(timezone=True))
     res_end_time  : Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
-    status = Column(Enum(ReservationStatus), default=ReservationStatus.PENDING, nullable=False)
+    status: Mapped[ReservationStatus] = mapped_column(Enum(ReservationStatus), default=ReservationStatus.PENDING)
 
     user = relationship("User", back_populates="reservations")  # many reservations can belong to 1 user
     seat = relationship("Seat", back_populates="reservations")  # many reservations can belong to 1 seat
