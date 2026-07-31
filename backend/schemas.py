@@ -23,3 +23,6 @@ class UserCreate(BaseModel):
 
 class SeatCreate(BaseModel):
      seat_number: str
+
+class ReservationStatusUpdate(BaseModel):
+     status : ReservationStatus
