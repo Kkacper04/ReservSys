@@ -16,3 +16,10 @@ class ReservationStatus(BaseModel):
 
 class Config:
         from_attributes = True
+
+class UserCreate(BaseModel):
+     name: str
+     email: str
+
+class SeatCreate(BaseModel):
+     seat_number: str

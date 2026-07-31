@@ -37,10 +37,10 @@ class Reservation(base):
 
     status = Column(Enum(ReservationStatus), default=ReservationStatus.PENDING, nullable=False)
 
-    User = relationship("User", back_populates="reservations")  # many reservations can belong to 1 user
-    Seat = relationship("Seat", back_populates="reservations")  # many reservations can belong to 1 seat
+    user = relationship("User", back_populates="reservations")  # many reservations can belong to 1 user
+    seat = relationship("Seat", back_populates="reservations")  # many reservations can belong to 1 seat
 
-    _table_args__ = (
+    __table_args__ = (
         CheckConstraint('res_end_time > res_start_time', name='check_valid_time_window'),
     )
 
