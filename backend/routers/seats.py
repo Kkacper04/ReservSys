@@ -19,5 +19,10 @@ def create_seat(seat: schemas.SeatResponse, db: Session = Depends(get_db)):
 def check_available_seats(start_time: datetime, end_time: datetime, db: Session = Depends(get_db)):
     if start_time >= end_time:
         raise HTTPException(status_code=400, detail="Start time must be before end time.")
+
     available_seats = crud.get_available_seats(db, start_time, end_time)
+
+    if available_seats is None:
+        return []
+    
     return available_seats
