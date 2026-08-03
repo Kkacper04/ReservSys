@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import models
 from database import engine
 from routers import users, seats, reservations
-from backend.config import settings
+from config import settings
 
 models.base.metadata.create_all(bind=engine)
 
