@@ -8,14 +8,15 @@ class ReservationCreate(BaseModel):
     res_end_time: datetime
 
 class ReservationStatus(BaseModel):
+    id: int
     user_id: int
     seat_id: int
     res_start_time: datetime
     res_end_time: datetime
     status: str = Field(default="pending", description="Reservation status") 
-
-class Config:
-        from_attributes = True
+    class Config:
+        from_attributes = True  
+     
 
 class UserCreate(BaseModel):
      name: str
@@ -25,10 +26,17 @@ class SeatCreate(BaseModel):
      seat_number: str
 
 class ReservationStatusUpdate(BaseModel):
-     status : ReservationStatus
+     status : str
+
 class SeatResponse(BaseModel):
      id: int
      seat_number: str
-
      class Config:
-          from_attributes = True
+             from_attributes = True 
+
+class UserResponse(BaseModel):
+     id: int
+     name: str
+     email: str
+     class Config:
+             from_attributes = True 
