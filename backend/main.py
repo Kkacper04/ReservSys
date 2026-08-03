@@ -1,3 +1,4 @@
+from datetime import datetime
 from fastapi import Depends, FastAPI, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import text 
@@ -64,3 +65,10 @@ def create_seat(seat: schemas.SeatCreate, db: Session = Depends(get_db)):
 def read_reservations(skip : int =0, limit : int =100, db: Session = Depends(get_db)):
     reservations = crud.get_reservation(db=db, skip=skip, limit=limit)
     return reservations
+
+@app.get("/api/available-seats", response_model=List[schemas.SeatResponse])
+def check_available_seats(start_time: datetime, end_time: datetime, db: Session = Depends(get_db)):
+    if start_time >= end_time:
+        raise HTTPException(status_code=400, detail="Start time must be before end time.")
+    available_seats = crud.get_available_seats(db, start_time, end_time)
+    return available_seats
