@@ -26,3 +26,9 @@ class SeatCreate(BaseModel):
 
 class ReservationStatusUpdate(BaseModel):
      status : ReservationStatus
+class SeatResponse(BaseModel):
+     id: int
+     seat_number: str
+
+     class Config:
+          from_attributes = True
