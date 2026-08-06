@@ -43,4 +43,3 @@ class Reservation(base):
     __table_args__ = (
         CheckConstraint('res_end_time > res_start_time', name='check_valid_time_window'),
     )
-
