@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
 
 class ReservationCreate(BaseModel):
@@ -14,9 +14,7 @@ class ReservationStatus(BaseModel):
     res_start_time: datetime
     res_end_time: datetime
     status: str = Field(default="pending", description="Reservation status") 
-    class Config:
-        from_attributes = True  
-     
+    model_config = ConfigDict(from_attributes=True)  
 
 class UserCreate(BaseModel):
      name: str
@@ -31,12 +29,10 @@ class ReservationStatusUpdate(BaseModel):
 class SeatResponse(BaseModel):
      id: int
      seat_number: str
-     class Config:
-             from_attributes = True 
+     model_config = ConfigDict(from_attributes=True)  
 
 class UserResponse(BaseModel):
      id: int
      name: str
      email: str
-     class Config:
-             from_attributes = True 
+     model_config = ConfigDict(from_attributes=True)  

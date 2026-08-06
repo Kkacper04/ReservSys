@@ -9,52 +9,39 @@ interface Seat {
 
 export default function SeatsPage() {
   const [seats, setSeats] = useState<Seat[]>([]);
-  const [loading, setLoading] = useState(true);
-  
-  
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
-  const [reservationStatus, setReservationStatus] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-
-  const startTime = new Date('2026-08-10T10:00:00').toISOString();
-  const endTime = new Date('2026-08-10T12:00:00').toISOString();
-
-  const fetchSeats = () => {
-    setLoading(true);
-    const url = `http://localhost:8000/api/seats/available?start_time=${startTime}&end_time=${endTime}`;
-
-    fetch(url)
-      .then((response) => {
-        if (!response.ok) throw new Error('Error connecting to API');
-        return response.json();
-      })
-      .then((data) => {
-        setSeats(data);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error("Błąd:", error);
-        setLoading(false);
-      });
-  };
+  const startTime = "2026-08-10T10:00:00";
+  const endTime = "2026-08-10T12:00:00";
 
   useEffect(() => {
     fetchSeats();
   }, []);
 
+  const fetchSeats = async () => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/seats/available?start_time=${startTime}&end_time=${endTime}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch seats');
+      }
+      const data = await response.json();
+      setSeats(data);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleReserve = async () => {
     if (!selectedSeat) return;
     
     setIsSubmitting(true);
-    setReservationStatus(null);
-
-    const payload = {
-      seat_id: selectedSeat,
-      user_id: 1, 
-      start_time: startTime,
-      end_time: endTime
-    };
+    setMessage(null);
 
     try {
       const response = await fetch('http://localhost:8000/api/reservations', {
@@ -62,79 +49,77 @@ export default function SeatsPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          user_id: 1,
+          seat_id: selectedSeat,
+          res_start_time: startTime,
+          res_end_time: endTime
+        }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to reserve the seat.');
+        throw new Error('Reservation failed');
       }
 
-      setReservationStatus({ type: 'success', msg: 'Success! The seat has been reserved.' });
+      setMessage({ type: 'success', text: 'Seat reserved successfully!' });
       setSelectedSeat(null);
-      fetchSeats(); 
-    
-    } catch (error: any) {
-      setReservationStatus({ type: 'error', msg: error.message });
+      fetchSeats();
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (loading) return <div className="p-8 text-lg">Loading available seats...</div>;
+  if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">Loading...</div>;
+  if (error) return <div className="min-h-screen flex items-center justify-center bg-gray-900 text-red-500">Error: {error}</div>;
 
   return (
-    <div className="max-w-4xl mx-auto p-8">
-      <h1 className="text-3xl font-bold mb-8 text-gray-800">Seat Reservation</h1>
-    
-      {reservationStatus && (
-        <div className={`p-4 mb-6 rounded-md ${reservationStatus.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-          {reservationStatus.msg}
-        </div>
-      )}
-
-      {seats.length === 0 ? (
-        <p className="text-gray-600">No available seats in this time slot.</p>
-      ) : (
-        <>
-          <div className="grid grid-cols-4 md:grid-cols-6 gap-4 mb-8">
-            {seats.map((seat) => (
-              <button
-                key={seat.id}
-                onClick={() => setSelectedSeat(seat.id)}
-                className={`p-4 rounded-lg text-center font-semibold transition-all duration-200 border-2 ${
-                  selectedSeat === seat.id 
-                    ? 'bg-blue-600 text-white border-blue-600 shadow-md scale-105' 
-                    : 'bg-blue-50 text-blue-900 border-transparent hover:bg-blue-100 hover:border-blue-300'
-                }`}
-              >
-                {seat.seat_number}
-              </button>
-            ))}
+    <div className="min-h-screen bg-gray-900 text-white p-8">
+      <div className="max-w-xl mx-auto">
+        <h1 className="text-3xl font-bold text-center mb-8 text-red-400">Seat Reservation</h1>
+        
+        {message && (
+          <div className={`p-4 mb-6 rounded-md text-center font-bold ${message.type === 'success' ? 'bg-green-900 text-green-200' : 'bg-red-900 text-red-200'}`}>
+            {message.text}
           </div>
+        )}
 
-          <div className="flex items-center justify-between bg-gray-50 p-6 rounded-lg border border-gray-200">
-            <div>
-              <p className="text-sm text-gray-500">Selected place:</p>
-              <p className="text-xl font-bold text-gray-800">
-                {selectedSeat ? seats.find(s => s.id === selectedSeat)?.seat_number : 'Brak'}
-              </p>
-            </div>
-            
+        <div className="mb-8 p-4 w-96 bg-gray-800 rounded-lg text-center border border-gray-700 flex flex-col items-center justify-center mx-auto">
+          <p className="text-gray-400 text-sm mb-1">Selected Time Slot:</p>
+          <p className="font-semibold text-lg">{startTime.replace('T', ' ')} - {endTime.replace('T', ' ')}</p>
+        </div>
+
+        <div className="flex flex-wrap justify-center gap-3 mb-10">
+          {seats.map((seat) => (
             <button
-              onClick={handleReserve}
-              disabled={!selectedSeat || isSubmitting}
-              className={`px-8 py-3 rounded-md font-bold text-white transition-colors ${
-                !selectedSeat || isSubmitting
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-green-600 hover:bg-green-700 shadow-lg'
+              key={seat.id}
+              onClick={() => setSelectedSeat(seat.id)}
+              className={`w-14 h-14 flex items-center justify-center rounded-md font-bold transition-all duration-200 shadow-sm ${
+                selectedSeat === seat.id
+                  ? 'bg-blue-500 text-white scale-105 ring-2 ring-blue-300'
+                  : 'bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 hover:border-gray-500'
               }`}
             >
-              {isSubmitting ? 'Przetwarzanie...' : 'Potwierdź rezerwację'}
+              {seat.seat_number}
             </button>
-          </div>
-        </>
-      )}
+          ))}
+        </div>
+
+        <div className="flex justify-center">
+          <button
+            onClick={handleReserve}
+            disabled={!selectedSeat || isSubmitting}
+            className={`px-10 py-4 rounded-lg font-bold text-lg transition-colors w-full md:w-auto ${
+              !selectedSeat || isSubmitting
+                ? 'bg-gray-800 cursor-not-allowed text-gray-500 border border-gray-700'
+                : 'bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-900/50'
+            }`}
+          >
+            {isSubmitting ? 'Processing...' : 'Confirm Reservation'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
