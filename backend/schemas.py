@@ -1,5 +1,6 @@
 from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
+from pydantic import BaseModel, EmailStr
 
 class ReservationCreate(BaseModel):
     user_id: int
@@ -17,8 +18,9 @@ class ReservationStatus(BaseModel):
     model_config = ConfigDict(from_attributes=True)  
 
 class UserCreate(BaseModel):
-     name: str
+     username: str
      email: str
+     password: str
 
 class SeatCreate(BaseModel):
      seat_number: str

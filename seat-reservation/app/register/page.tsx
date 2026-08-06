@@ -4,35 +4,42 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-export default function LoginPage() {
+export default function RegisterPage() {
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
 
+    // Sprawdzenie, czy hasła są identyczne przed wysłaniem do backendu
+    if (password !== confirmPassword) {
+      setError('Passwords do not match!');
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      const response = await fetch('http://localhost:8000/api/login', {
+      const response = await fetch('http://localhost:8000/api/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ username, email, password }),
       });
 
       if (!response.ok) {
-        throw new Error('Invalid email or password');
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.detail || 'Registration failed. Please try again.');
       }
 
-      const data = await response.json();
-      
-      localStorage.setItem('user_id', data.user_id.toString());
-      router.push('/seats');
+      router.push('/login');
       
     } catch (err: any) {
       setError(err.message);
@@ -45,7 +52,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-white flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-black rounded-xl shadow-lg border border-green-700 p-8">
         <h2 className="text-3xl font-bold text-center text-yellow-400 mb-8">
-          ReservSys Login page
+          ReservSys Register page
         </h2>
 
         {error && (
@@ -54,7 +61,21 @@ export default function LoginPage() {
           </div>
         )}
 
-        <form onSubmit={handleLogin} className="space-y-6">
+        <form onSubmit={handleRegister} className="space-y-6">
+          <div>
+            <label className="block text-gray-400 text-sm font-bold mb-2" htmlFor="username">
+              Username
+            </label>
+            <input
+              id="username"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            />
+          </div>
+
           <div>
             <label className="block text-gray-400 text-sm font-bold mb-2" htmlFor="email">
               Email Address
@@ -66,7 +87,6 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              
             />
           </div>
 
@@ -80,6 +100,22 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              minLength={6}
+              className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            />
+          </div>
+
+          <div>
+            <label className="block text-gray-400 text-sm font-bold mb-2" htmlFor="confirmPassword">
+              Confirm Password
+            </label>
+            <input
+              id="confirmPassword"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              minLength={6}
               className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             />
           </div>
@@ -93,14 +129,14 @@ export default function LoginPage() {
                 : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/50'
             }`}
           >
-            {isLoading ? 'Signing in...' : 'Sign In'}
+            {isLoading ? 'Creating account...' : 'Sign Up'}
           </button>
         </form>
 
         <div className="mt-6 text-center text-gray-400 text-sm">
-          Don't have an account?{' '}
-          <Link href="/register" className="text-red-400 hover:text-blue-300 font-bold transition-colors">
-            Sign up here
+          Already have an account?{' '}
+          <Link href="/login" className="text-red-400 hover:text-blue-300 font-bold transition-colors">
+            Sign in here
           </Link>
         </div>
       </div>
