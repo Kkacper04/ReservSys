@@ -50,3 +50,5 @@ next-env.d.ts
 
 #database
 *.db
+
+seed.py
