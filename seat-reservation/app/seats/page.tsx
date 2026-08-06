@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/dist/client/components/navigation';
 import { useState, useEffect } from 'react';
 
 interface Seat {
@@ -14,11 +15,15 @@ export default function SeatsPage() {
   const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-
+  const [userId, setUserId] = useState<number | null>(null);
   const startTime = "2026-08-10T10:00:00";
   const endTime = "2026-08-10T12:00:00";
-
+  const router = useRouter();
   useEffect(() => {
+    const storedUserId = localStorage.getItem('user_id');
+    if (storedUserId) {
+      setUserId(parseInt(storedUserId));
+    }
     fetchSeats();
   }, []);
 
@@ -40,6 +45,10 @@ export default function SeatsPage() {
   const handleReserve = async () => {
     if (!selectedSeat) return;
     
+    if (!userId) {
+      setMessage({ type: 'error', text: 'User not logged in. Please log in to reserve a seat.' });
+      return;
+    }
     setIsSubmitting(true);
     setMessage(null);
 
@@ -50,7 +59,7 @@ export default function SeatsPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          user_id: 1,
+          user_id: userId,
           seat_id: selectedSeat,
           res_start_time: startTime,
           res_end_time: endTime
