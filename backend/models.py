@@ -16,6 +16,7 @@ class User(base):
     id= Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
+    password = Column(String, nullable=False)
     reservations = relationship("Reservation", back_populates="user")   # 1 user can have many reservations
 
 class Seat(base):

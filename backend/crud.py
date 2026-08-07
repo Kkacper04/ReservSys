@@ -9,7 +9,7 @@ def create_reservation(db: Session, reservation: schemas.ReservationCreate):
         models.Reservation.seat_id == reservation.seat_id,
         models.Reservation.res_start_time < reservation.res_end_time,
         Reservation.res_end_time > reservation.res_start_time,
-        Reservation.status != "cancelled"
+        Reservation.status != models.ReservationStatus.CANCELLED
     ).first()
 
     if collision_check:
@@ -41,12 +41,19 @@ def update_reservation_status(db: Session, reservation_id: int, new_status: mode
     return db_reservation
     
 def get_available_seats(db: Session, start_time: datetime, end_time: datetime):
-    busy_reservations = db.query(models.Reservation.seat_id).filter(
-        models.Reservation.res_start_time < end_time, #res. must start before the end time of the desired window
-        models.Reservation.res_end_time > start_time, #res must end after the start time of the desired window 
-        # for example 
-        # We are looking for available seats from 10:00 to 12:00
-        # Someone has a reservation from 09:00 to 11:00, so we have a collision
-        # because 09:00 < 12:00 and 11:00 > 10:00
-        models.Reservation.status != models.ReservationStatus.CANCELLED
-    ).all()
+    busy_seat_ids = (
+        db.query(models.Reservation.seat_id)
+        .filter(
+            models.Reservation.res_start_time < end_time,
+            models.Reservation.res_end_time > start_time,
+            models.Reservation.status != models.ReservationStatus.CANCELLED
+        )
+        .all()
+    )
+    reserved_ids = {row[0] for row in busy_seat_ids}
+
+    all_seats = db.query(models.Seat).all()
+    return [
+        schemas.SeatResponse(id=seat.id, seat_number=seat.seat_number, is_available=seat.id not in reserved_ids)
+        for seat in all_seats
+    ]
