@@ -18,8 +18,9 @@ export default function SeatsPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [userId, setUserId] = useState<number | null>(null);
   
-  const startTime = "2026-08-10T10:00:00";
-  const endTime = "2026-08-10T12:00:00";
+  const [startTime, setStartTime] = useState("2026-08-10T10:00");
+  const [endTime, setEndTime] = useState("2026-08-10T12:00");
+  
   const router = useRouter();
   
   useEffect(() => {
@@ -32,7 +33,8 @@ export default function SeatsPage() {
 
   const fetchSeats = async () => {
     try {
-      const response = await fetch(`http://localhost:8000/api/seats/available?start_time=${startTime}&end_time=${endTime}`);
+      setIsLoading(true);
+      const response = await fetch(`http://localhost:8000/api/seats/available?start_time=${startTime}:00&end_time=${endTime}:00`);
       if (!response.ok) {
         throw new Error('Failed to fetch seats');
       }
@@ -64,8 +66,8 @@ export default function SeatsPage() {
         body: JSON.stringify({
           user_id: userId,
           seat_id: selectedSeat,
-          res_start_time: startTime,
-          res_end_time: endTime
+          res_start_time: `${startTime}:00`,
+          res_end_time: `${endTime}:00`
         }),
       });
 
@@ -83,7 +85,6 @@ export default function SeatsPage() {
     }
   };
 
-  if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">Loading...</div>;
   if (error) return <div className="min-h-screen flex items-center justify-center bg-gray-900 text-red-500">Error: {error}</div>;
 
   return (
@@ -96,31 +97,63 @@ export default function SeatsPage() {
             {message.text}
           </div>
         )}
+        <div className="mb-8 p-5 bg-gray-800 rounded-lg border border-gray-700 flex flex-col gap-4 shadow-md">
+          <p className="text-gray-300 font-semibold text-center text-sm">Select time range:</p>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="flex flex-col">
+              <label className="text-xs text-gray-400 mb-1">From:</label>
+              <input
+                type="datetime-local"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className="bg-gray-900 border border-gray-700 rounded-md p-2 text-white text-sm focus:outline-none focus:border-blue-500"
+              />
+            </div>
 
-        <div className="mb-8 p-4 w-96 bg-gray-800 rounded-lg text-center border border-gray-700 flex flex-col items-center justify-center mx-auto">
-          <p className="text-gray-400 text-sm mb-1">Selected Time Slot:</p>
-          <p className="font-semibold text-lg">{startTime.replace('T', ' ')} - {endTime.replace('T', ' ')}</p>
+            <div className="flex flex-col">
+              <label className="text-xs text-gray-400 mb-1">To:</label>
+              <input
+                type="datetime-local"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                className="bg-gray-900 border border-gray-700 rounded-md p-2 text-white text-sm focus:outline-none focus:border-blue-500"
+              />
+            </div>
+          </div>
+
+          <button
+            onClick={fetchSeats}
+            className="bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 rounded-md transition-colors text-sm shadow cursor-pointer"
+          >
+            Check Available Seats
+          </button>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-3 mb-10">
-          {seats.map((seat) => (
-            <button
-              key={seat.id}
-              onClick={() => setSelectedSeat(seat.id)}
-              disabled={!seat.is_available} 
-              className={`w-14 h-14 flex items-center justify-center rounded-md font-bold transition-all duration-200 shadow-sm ${
-                !seat.is_available
-                  ? 'bg-gray-800 text-gray-600 cursor-not-allowed border border-gray-800 opacity-50' 
-                  : selectedSeat === seat.id
-                    ? 'bg-blue-500 text-white scale-105 ring-2 ring-blue-300' 
-                    : 'bg-gray-700 hover:bg-gray-600 text-gray-300 border border-gray-600 hover:border-gray-500 cursor-pointer' // Wygląd dla WOLNYCH
-              }`}
-            >
-              {seat.seat_number}
-            </button>
-          ))}
-        </div>
-
+        {/* Siatka krzeseł */}
+        {isLoading ? (
+          <div className="text-center py-12 text-gray-400">Loading seats...</div>
+        ) : (
+          <div className="flex flex-wrap justify-center gap-3 mb-10">
+            {seats.map((seat) => (
+              <button
+                key={seat.id}
+                onClick={() => setSelectedSeat(seat.id)}
+                disabled={!seat.is_available} 
+                className={`w-14 h-14 flex items-center justify-center rounded-md font-bold transition-all duration-200 shadow-sm ${
+                  !seat.is_available
+                    ? 'bg-gray-800 text-gray-600 cursor-not-allowed border border-gray-800 opacity-50' 
+                    : selectedSeat === seat.id
+                      ? 'bg-blue-500 text-white scale-105 ring-2 ring-blue-300' 
+                      : 'bg-gray-700 hover:bg-gray-600 text-gray-300 border border-gray-600 hover:border-gray-500 cursor-pointer'
+                }`}
+              >
+                {seat.seat_number}
+              </button>
+            ))}
+          </div>
+        )}
+        
         <div className="flex justify-center">
           <button
             onClick={handleReserve}
@@ -128,7 +161,7 @@ export default function SeatsPage() {
             className={`px-10 py-4 rounded-lg font-bold text-lg transition-colors w-full md:w-auto ${
               !selectedSeat || isSubmitting
                 ? 'bg-gray-800 cursor-not-allowed text-gray-500 border border-gray-700'
-                : 'bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-900/50'
+                : 'bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-900/50 cursor-pointer'
             }`}
           >
             {isSubmitting ? 'Processing...' : 'Confirm Reservation'}
