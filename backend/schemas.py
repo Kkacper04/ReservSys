@@ -31,6 +31,7 @@ class ReservationStatusUpdate(BaseModel):
 class SeatResponse(BaseModel):
      id: int
      seat_number: str
+     is_available: bool
      model_config = ConfigDict(from_attributes=True)  
 
 class UserResponse(BaseModel):
@@ -38,3 +39,7 @@ class UserResponse(BaseModel):
      name: str
      email: str
      model_config = ConfigDict(from_attributes=True)  
+
+class UserLogin(BaseModel):
+     email: str
+     password: str
