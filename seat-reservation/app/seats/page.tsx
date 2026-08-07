@@ -25,11 +25,13 @@ export default function SeatsPage() {
   
   useEffect(() => {
     const storedUserId = localStorage.getItem('user_id');
-    if (storedUserId) {
+    if (!storedUserId) {
+      router.push('/login'); 
+    } else {
       setUserId(parseInt(storedUserId));
-    }
     fetchSeats();
-  }, []);
+    }
+  }, [router]);
 
   const fetchSeats = async () => {
     try {
@@ -153,7 +155,7 @@ export default function SeatsPage() {
             ))}
           </div>
         )}
-        
+
         <div className="flex justify-center">
           <button
             onClick={handleReserve}
