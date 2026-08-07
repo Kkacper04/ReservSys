@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 interface Seat {
   id: number;
   seat_number: string;
+  is_available: boolean;
 }
 
 export default function SeatsPage() {
@@ -16,9 +17,11 @@ export default function SeatsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [userId, setUserId] = useState<number | null>(null);
+  
   const startTime = "2026-08-10T10:00:00";
   const endTime = "2026-08-10T12:00:00";
   const router = useRouter();
+  
   useEffect(() => {
     const storedUserId = localStorage.getItem('user_id');
     if (storedUserId) {
@@ -72,7 +75,7 @@ export default function SeatsPage() {
 
       setMessage({ type: 'success', text: 'Seat reserved successfully!' });
       setSelectedSeat(null);
-      fetchSeats();
+      fetchSeats(); 
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message });
     } finally {
@@ -104,10 +107,13 @@ export default function SeatsPage() {
             <button
               key={seat.id}
               onClick={() => setSelectedSeat(seat.id)}
+              disabled={!seat.is_available} 
               className={`w-14 h-14 flex items-center justify-center rounded-md font-bold transition-all duration-200 shadow-sm ${
-                selectedSeat === seat.id
-                  ? 'bg-blue-500 text-white scale-105 ring-2 ring-blue-300'
-                  : 'bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 hover:border-gray-500'
+                !seat.is_available
+                  ? 'bg-gray-800 text-gray-600 cursor-not-allowed border border-gray-800 opacity-50' 
+                  : selectedSeat === seat.id
+                    ? 'bg-blue-500 text-white scale-105 ring-2 ring-blue-300' 
+                    : 'bg-gray-700 hover:bg-gray-600 text-gray-300 border border-gray-600 hover:border-gray-500 cursor-pointer' // Wygląd dla WOLNYCH
               }`}
             >
               {seat.seat_number}
