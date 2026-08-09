@@ -5,11 +5,13 @@ from sqlalchemy.exc import IntegrityError
 from typing import List
 import schemas, crud
 from database import get_db
+from routers.users import get_current_user
 
 router = APIRouter(prefix="/api/reservations", tags=["Reservations"])
 
 @router.post("/", response_model=schemas.ReservationStatus)
-def create_reservation(reservation: schemas.ReservationCreate, db: Session = Depends(get_db)):
+def create_reservation(reservation: schemas.ReservationCreate, db: Session = Depends(get_db), current_user: schemas.UserResponse = Depends(get_current_user)):
+    reservation.user_id = current_user.id 
     try:
         new_reservation = crud.create_reservation(db=db, reservation=reservation)
         if new_reservation is None:

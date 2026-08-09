@@ -31,7 +31,7 @@ export default function LoginPage() {
 
       const data = await response.json();
       
-      localStorage.setItem('user_id', data.user_id.toString());
+      localStorage.setItem('token', data.access_token);
       router.push('/seats');
       
     } catch (err: any) {
