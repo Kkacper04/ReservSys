@@ -8,6 +8,7 @@ interface Seat {
   id: number;
   seat_number: string;
   is_available: boolean;
+  office_name: string;
   zone: string;
   desk_type: string;
   has_monitor: boolean;
@@ -27,7 +28,7 @@ export default function SeatsPage() {
 
   const [startTime, setStartTime] = useState("2026-08-10T10:00");
   const [endTime, setEndTime] = useState("2026-08-10T12:00");
-
+  const [selectedOffice, setSelectedOffice] = useState<string>("");
   const router = useRouter();
 
   useEffect(() => {
@@ -51,6 +52,9 @@ export default function SeatsPage() {
       }
       const data = await response.json();
       setSeats(data);
+      if (data.length > 0 && selectedOffice === "") {
+        setSelectedOffice(data[0].office_name);
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -120,8 +124,20 @@ export default function SeatsPage() {
             {message.text}
           </div>
         )}
-        <div className="mb-8 p-5 bg-gray-800 rounded-lg border border-gray-700 flex flex-col gap-4 shadow-md">
-          <p className="text-gray-300 font-semibold text-center text-sm">
+       <div className="mb-8 p-5 bg-gray-800 rounded-lg border border-gray-700 flex flex-col gap-5 shadow-md">
+          <div className="flex flex-col border-b border-gray-700 pb-5">
+            <label className="text-gray-300 font-bold mb-2">Select Office:</label>
+            <select 
+              value={selectedOffice} 
+              onChange={(e) => setSelectedOffice(e.target.value)}
+              className="bg-gray-900 border border-gray-600 rounded-md p-3 text-white text-lg font-semibold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all cursor-pointer"
+            >
+              {Array.from(new Set(seats.map(s => s.office_name))).map(office => (
+                <option key={office} value={office}>{office}</option>
+              ))}
+            </select>
+          </div>
+          <p className="text-gray-300 font-semibold text-sm">
             Select time range:
           </p>
 
@@ -159,7 +175,7 @@ export default function SeatsPage() {
           <div className="text-center py-12 text-gray-400">Loading...</div>
         ) : (
           <div className="flex flex-col gap-8 mb-10">
-            {Array.from(new Set(seats.map((s) => s.zone))).map((zone) => (
+            {Array.from(new Set(seats.filter(s => s.office_name === selectedOffice).map((s) => s.zone))).map((zone) => (
               <div
                 key={zone}
                 className="bg-gray-800/50 p-6 rounded-xl border border-gray-700"
@@ -184,11 +200,11 @@ export default function SeatsPage() {
                   }`}
                 >
                   {seats
-                    .filter((seat) => seat.zone === zone)
+                    .filter((seat) => seat.zone === zone && seat.office_name === selectedOffice)
                     .map((seat) => (
                       <button
                         key={seat.id}
-                        onClick={() => setSelectedSeat(seat.id)}
+                        onClick={() => setSelectedSeat(selectedSeat === seat.id ? null : seat.id)}
                         disabled={!seat.is_available}
                         className={`relative group w-24 h-24 flex flex-col items-center justify-center rounded-xl font-bold transition-all duration-300 shadow-md ${
                           !seat.is_available
