@@ -23,6 +23,9 @@ class UserCreate(BaseModel):
 
 class SeatCreate(BaseModel):
      seat_number: str
+     zone : str 
+     desk_type : str
+     has_monitor : bool
 
 class ReservationStatusUpdate(BaseModel):
      status : str
@@ -31,6 +34,9 @@ class SeatResponse(BaseModel):
      id: int
      seat_number: str
      is_available: bool
+     zone : str 
+     desk_type : str
+     has_monitor : bool
      model_config = ConfigDict(from_attributes=True)  
 
 class UserResponse(BaseModel):
