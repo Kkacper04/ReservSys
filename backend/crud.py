@@ -54,6 +54,6 @@ def get_available_seats(db: Session, start_time: datetime, end_time: datetime):
 
     all_seats = db.query(models.Seat).all()
     return [
-        schemas.SeatResponse(id=seat.id, seat_number=seat.seat_number, is_available=seat.id not in reserved_ids)
+        schemas.SeatResponse(id=seat.id, seat_number=seat.seat_number, is_available=seat.id not in reserved_ids,zone=seat.zone, desk_type=seat.desk_type, has_monitor=seat.has_monitor) #type: ignore
         for seat in all_seats
     ]

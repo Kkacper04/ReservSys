@@ -7,6 +7,9 @@ interface Seat {
   id: number;
   seat_number: string;
   is_available: boolean;
+  zone: string;
+  desk_type: string;
+  has_monitor: boolean;
 }
 
 export default function SeatsPage() {
@@ -132,26 +135,47 @@ export default function SeatsPage() {
           </button>
         </div>
 
-        {/* Siatka krzeseł */}
+
+        tsx
+
+
         {isLoading ? (
-          <div className="text-center py-12 text-gray-400">Loading seats...</div>
+          <div className="text-center py-12 text-gray-400">Loading...</div>
         ) : (
-          <div className="flex flex-wrap justify-center gap-3 mb-10">
-            {seats.map((seat) => (
-              <button
-                key={seat.id}
-                onClick={() => setSelectedSeat(seat.id)}
-                disabled={!seat.is_available} 
-                className={`w-14 h-14 flex items-center justify-center rounded-md font-bold transition-all duration-200 shadow-sm ${
-                  !seat.is_available
-                    ? 'bg-gray-800 text-gray-600 cursor-not-allowed border border-gray-800 opacity-50' 
-                    : selectedSeat === seat.id
-                      ? 'bg-blue-500 text-white scale-105 ring-2 ring-blue-300' 
-                      : 'bg-gray-700 hover:bg-gray-600 text-gray-300 border border-gray-600 hover:border-gray-500 cursor-pointer'
-                }`}
-              >
-                {seat.seat_number}
-              </button>
+          <div className="flex flex-col gap-8 mb-10">
+            {Array.from(new Set(seats.map(s => s.zone))).map(zone => (
+              <div key={zone} className="bg-gray-800/50 p-6 rounded-xl border border-gray-700">
+                <h2 className="text-xl font-bold mb-4 text-blue-300 border-b border-gray-700 pb-2">
+                  Strefa: {zone}
+                </h2>
+                
+                <div className="flex flex-wrap gap-4">
+                  {seats.filter(seat => seat.zone === zone).map(seat => (
+                    <button
+                      key={seat.id}
+                      onClick={() => setSelectedSeat(seat.id)}
+                      disabled={!seat.is_available} 
+                      className={`relative w-20 h-20 flex flex-col items-center justify-center rounded-lg font-bold transition-all duration-200 shadow-sm ${
+                        !seat.is_available
+                          ? 'bg-gray-800 text-gray-600 cursor-not-allowed border border-gray-800 opacity-50' 
+                          : selectedSeat === seat.id
+                            ? 'bg-blue-500 text-white scale-105 ring-2 ring-blue-300' 
+                            : 'bg-gray-700 hover:bg-gray-600 text-gray-300 border border-gray-600 hover:border-gray-500 cursor-pointer'
+                      }`}
+                    >
+                      <span className="text-lg">{seat.seat_number}</span>
+                      <span className="text-[10px] font-normal uppercase text-gray-400 mt-1 leading-tight">
+                        {seat.desk_type}
+                      </span>
+                      {seat.has_monitor && (
+                        <div className="absolute -top-2 -right-2 bg-yellow-500 text-black text-xs w-6 h-6 flex items-center justify-center rounded-full border-2 border-gray-900" title="Includes Monitor">
+                        
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         )}

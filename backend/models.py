@@ -1,4 +1,4 @@
-from sqlalchemy import CheckConstraint, Column, Integer, String, ForeignKey, Enum, DateTime
+from sqlalchemy import Boolean, CheckConstraint, Column, Integer, String, ForeignKey, Enum, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 import enum
@@ -24,6 +24,11 @@ class Seat(base):
 
     id= Column(Integer, primary_key=True, index=True)
     seat_number = Column(String, unique=True, index=True, nullable=False)
+    # Additonal attributes for seat properties (ReservSys allows to rent cooworking spaces in the office)
+    zone = Column(String, nullable=False)
+    desk_type = Column(String, nullable=False)
+    has_monitor = Column(Boolean, nullable=False)
+
     reservations = relationship("Reservation", back_populates="seat")   # 1 seat can have many reservations( few people can reserve the same seat for different films)
 
 class Reservation(base):
