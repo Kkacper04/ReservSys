@@ -24,19 +24,17 @@ export default function SeatsPage() {
     type: "success" | "error";
     text: string;
   } | null>(null);
-  const [userId, setUserId] = useState<number | null>(null);
-
+  
   const [startTime, setStartTime] = useState("2026-08-10T10:00");
   const [endTime, setEndTime] = useState("2026-08-10T12:00");
   const [selectedOffice, setSelectedOffice] = useState<string>("");
   const router = useRouter();
 
   useEffect(() => {
-    const storedUserId = localStorage.getItem("user_id");
-    if (!storedUserId) {
-      router.push("/login");
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/login'); 
     } else {
-      setUserId(parseInt(storedUserId));
       fetchSeats();
     }
   }, [router]);
@@ -64,31 +62,24 @@ export default function SeatsPage() {
 
   const handleReserve = async () => {
     if (!selectedSeat) return;
-
-    if (!userId) {
-      setMessage({
-        type: "error",
-        text: "User not logged in. Please log in to reserve a seat.",
-      });
-      return;
-    }
     setIsSubmitting(true);
     setMessage(null);
 
+    
     try {
-      const response = await fetch("http://localhost:8000/api/reservations", {
-        method: "POST",
+      const response = await fetch('http://localhost:8000/api/reservations', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify({
-          user_id: userId,
           seat_id: selectedSeat,
           res_start_time: `${startTime}:00`,
           res_end_time: `${endTime}:00`,
         }),
       });
-
+    
       if (!response.ok) {
         throw new Error("Reservation failed");
       }
