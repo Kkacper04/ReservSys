@@ -4,6 +4,7 @@ from typing import List
 from datetime import datetime
 import schemas, crud, models
 from database import get_db
+from routers.users import require_admin
 
 router = APIRouter(prefix="/api/seats", tags=["Seats"])
 
@@ -20,3 +21,14 @@ def check_available_seats(start_time: datetime, end_time: datetime, db: Session 
     if start_time >= end_time:
         raise HTTPException(status_code=400, detail="Start time must be before end time.")
     return crud.get_available_seats(db, start_time, end_time)
+
+@router.patch("/{seat_id}/toggle")
+def toggle_seat_status(seat_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(require_admin)):
+    seat = db.query(models.Seat).filter(models.Seat.id == seat_id).first()
+    if not seat:
+        raise HTTPException(status_code=404, detail="Seat not found")
+    
+    seat.is_active = not seat.is_active  # type: ignore
+    db.commit()
+    
+    return {"message": "Status has been changed", "is_active": seat.is_active}

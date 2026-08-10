@@ -1,6 +1,6 @@
 from sqlalchemy import Boolean, CheckConstraint, Column, Integer, String, ForeignKey, Enum, DateTime, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from datetime import datetime
+from datetime import datetime, timezone
 import enum
 from database import base
 
@@ -17,7 +17,10 @@ class User(base):
     name = Column(String, unique=True, index=True, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
     password = Column(String, nullable=False)
+    role = Column(String, nullable=False, default="employee")  # role can be "employee" or "admin"
     reservations = relationship("Reservation", back_populates="user")   # 1 user can have many reservations
+    notification = relationship("Notification", back_populates="user")  # 1 user can have many notifications
+
 
 class Seat(base):
     __tablename__ = "seats"
@@ -29,6 +32,7 @@ class Seat(base):
     office_name = Column(String, nullable=False)
     desk_type = Column(String, nullable=False)
     has_monitor = Column(Boolean, nullable=False)
+    is_active = Column(Boolean, nullable=False, default=True) #workspace working status, if the seat is broken or under maintenance, it will be marked as inactive and cannot be reserved
 
     reservations = relationship("Reservation", back_populates="seat")   # 1 seat can have many reservations( few people can reserve the same seat for different films)
 
@@ -50,3 +54,12 @@ class Reservation(base):
     __table_args__ = (
         CheckConstraint('res_end_time > res_start_time', name='check_valid_time_window'),
     )
+class Notification(base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    message = Column(String, nullable=False)
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    user = relationship("User", back_populates="notification")  
