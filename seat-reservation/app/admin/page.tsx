@@ -36,7 +36,9 @@ export default function AdminPanel() {
   }, [router]);
 
   const fetchSeats = async () => {
-    const response = await fetch("http://localhost:8000/api/seats/available?start_time=2026-08-10T10:00:00&end_time=2026-08-10T12:00:00");
+    const now = new Date().toISOString();
+    const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    const response = await fetch(`http://localhost:8000/api/seats/available?start_time=${now}&end_time=${tomorrow}`);
     const data = await response.json();
     setSeats(data);
   };

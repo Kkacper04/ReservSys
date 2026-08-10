@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/dist/client/components/navigation";
 import { useState, useEffect } from "react";
-import { Laptop, UserRound, Headphones, DoorClosed, AlertTriangle, X } from "lucide-react";
+import { Laptop, UserRound, Headphones, DoorClosed, AlertTriangle, X, User } from "lucide-react";
+import Link from "next/link";
 
 interface NotificationMsg {
   id: number;
@@ -33,8 +34,18 @@ export default function SeatsPage() {
     text: string;
   } | null>(null);
   
-  const [startTime, setStartTime] = useState("2026-08-10T10:00");
-  const [endTime, setEndTime] = useState("2026-08-10T12:00");
+  const getDefaultTimes = () => {
+    const now = new Date();
+    now.setMinutes(0, 0, 0);
+    now.setHours(now.getHours() + 1);
+    const start = now.toISOString().slice(0, 16);
+    const end = new Date(now.getTime() + 2 * 60 * 60 * 1000).toISOString().slice(0, 16);
+    return { start, end };
+  };
+
+  const defaults = getDefaultTimes();
+  const [startTime, setStartTime] = useState(defaults.start);
+  const [endTime, setEndTime] = useState(defaults.end);
   const [selectedOffice, setSelectedOffice] = useState<string>("");
   const router = useRouter();
 
@@ -161,9 +172,18 @@ export default function SeatsPage() {
       )}
 
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold text-center mb-8 text-red-400">
-          Seat Reservation
-        </h1>
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-3xl font-bold text-red-400">
+            Seat Reservation
+          </h1>
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white px-4 py-2 rounded-lg border border-gray-700 transition-colors"
+          >
+            <User size={18} />
+            My Reservations
+          </Link>
+        </div>
 
         {message && (
           <div
