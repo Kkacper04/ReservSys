@@ -49,3 +49,27 @@ def admin_cancel_reservation(reservation_id: int, db: Session = Depends(get_db),
     db.commit()
     
     return {"message": "Reservation cancelled."}
+
+@router.get("/my", response_model=List[schemas.ReservationStatus])
+def get_my_reservations(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    return db.query(models.Reservation).filter(
+        models.Reservation.user_id == current_user.id
+    ).all()
+
+@router.patch("/{reservation_id}/my-cancel", status_code=200)
+def user_cancel_reservation(reservation_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    reservation = db.query(models.Reservation).filter(
+        models.Reservation.id == reservation_id,
+        models.Reservation.user_id == current_user.id
+    ).first()
+
+    if not reservation:
+        raise HTTPException(status_code=404, detail="Reservation not found")
+
+    if reservation.status == models.ReservationStatus.CANCELLED:
+        raise HTTPException(status_code=400, detail="Reservation is already cancelled")
+
+    reservation.status = models.ReservationStatus.CANCELLED  # type: ignore
+    db.commit()
+
+    return {"message": "Reservation cancelled successfully."}
