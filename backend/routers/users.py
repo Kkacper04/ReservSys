@@ -1,5 +1,5 @@
 import os
-
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 import bcrypt
@@ -52,7 +52,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 
 def require_admin(current_user: models.User = Depends(get_current_user)):
     if current_user.role != "admin": # type: ignore
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Brak uprawnień administratora.")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions.")
     return current_user
 
 router = APIRouter(prefix="/api", tags=["Users"])
@@ -79,3 +79,22 @@ def login(user_credentials : schemas.UserLogin, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
     access_token = create_access_token(data={"sub": str(user.id)})
     return {"access_token": access_token, "token_type": "bearer"}
+
+@router.get("/me/notifications", response_model=List[schemas.NotificationResponse])
+def get_my_notifications(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    notifications = db.query(models.Notification).filter(
+        models.Notification.user_id == current_user.id,
+        models.Notification.is_read == False
+    ).all()
+    return notifications
+@router.patch("/me/notifications/{notification_id}/read")
+def mark_notification_read(notification_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    notification = db.query(models.Notification).filter(
+        models.Notification.id == notification_id,
+        models.Notification.user_id == current_user.id
+    ).first()
+    
+    if notification:
+        notification.is_read = True # type: ignore
+        db.commit()
+    return {"message": "Notification marked as read"}

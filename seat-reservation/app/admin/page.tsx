@@ -11,8 +11,18 @@ interface Seat {
   is_active: boolean;
 }
 
+interface Reservation {
+  id: number;
+  user_id: number;
+  seat_id: number;
+  res_start_time: string;
+  res_end_time: string;
+  status: string;
+}
+
 export default function AdminPanel() {
   const [seats, setSeats] = useState<Seat[]>([]);
+  const [reservations, setReservations] = useState<Reservation[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -21,6 +31,7 @@ export default function AdminPanel() {
       router.push("/login");
     } else {
       fetchSeats();
+      fetchReservations();
     }
   }, [router]);
 
@@ -28,6 +39,27 @@ export default function AdminPanel() {
     const response = await fetch("http://localhost:8000/api/seats/available?start_time=2026-08-10T10:00:00&end_time=2026-08-10T12:00:00");
     const data = await response.json();
     setSeats(data);
+  };
+
+  const fetchReservations = async () => {
+    const response = await fetch("http://localhost:8000/api/reservations/");
+    const data = await response.json();
+    setReservations(data);
+  };
+
+  const cancelReservation = async (id: number) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/reservations/${id}/cancel`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        }
+      });
+      if (!response.ok) throw new Error("Błąd podczas anulowania");
+      fetchReservations();
+    } catch(err: any) {
+      alert(err.message);
+    }
   };
 
   const toggleSeat = async (seatId: number) => {
@@ -84,6 +116,42 @@ export default function AdminPanel() {
                       className={`px-4 py-1.5 rounded font-bold text-sm ${seat.is_active ? 'bg-red-900/50 hover:bg-red-900 text-red-200' : 'bg-green-900/50 hover:bg-green-900 text-green-200'}`}
                     >
                       {seat.is_active ? "Report problems" : "Unlock"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 mt-8">
+          <h2 className="text-xl mb-4 text-orange-300 font-bold">Active Reservations</h2>
+          
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-gray-700 text-gray-400">
+                <th className="py-3">Reservation ID</th>
+                <th className="py-3">User ID</th>
+                <th className="py-3">Seat ID</th>
+                <th className="py-3">Status</th>
+                <th className="py-3">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {reservations.filter(r => r.status !== "cancelled").map(res => (
+                <tr key={res.id} className="border-b border-gray-700/50">
+                  <td className="py-3 font-bold">#{res.id}</td>
+                  <td className="py-3 text-gray-300">User {res.user_id}</td>
+                  <td className="py-3 text-gray-300">Seat {res.seat_id}</td>
+                  <td className="py-3">
+                    <span className="text-blue-400">{res.status}</span>
+                  </td>
+                  <td className="py-3">
+                    <button 
+                      onClick={() => cancelReservation(res.id)}
+                      className="px-4 py-1.5 rounded font-bold text-sm bg-orange-900/50 hover:bg-orange-900 text-orange-200 cursor-pointer"
+                    >
+                      Cancel Reservation
                     </button>
                   </td>
                 </tr>
