@@ -1,5 +1,6 @@
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_serializer
 from datetime import datetime
+from typing import Any
 
 class ReservationCreate(BaseModel):
     user_id: int = 0
@@ -17,7 +18,7 @@ class ReservationStatus(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     @field_serializer('status')
-    def serialize_status(self, value: str) -> str:
+    def serialize_status(self, value: Any) -> str:
         if hasattr(value, 'value'):
             return value.value
         return value
