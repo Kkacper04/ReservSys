@@ -2,7 +2,13 @@
 
 import { useRouter } from "next/dist/client/components/navigation";
 import { useState, useEffect } from "react";
-import { Laptop, UserRound, Headphones, DoorClosed } from "lucide-react";
+import { Laptop, UserRound, Headphones, DoorClosed, AlertTriangle, X } from "lucide-react";
+
+interface NotificationMsg {
+  id: number;
+  message: string;
+  is_read: boolean;
+}
 
 interface Seat {
   id: number;
@@ -21,6 +27,7 @@ export default function SeatsPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationMsg[]>([]);
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
@@ -37,8 +44,39 @@ export default function SeatsPage() {
       router.push('/login'); 
     } else {
       fetchSeats();
+      fetchNotifications();
     }
   }, [router]);
+
+  const fetchNotifications = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/api/me/notifications", {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setNotifications(data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const markNotificationRead = async (id: number) => {
+    try {
+      await fetch(`http://localhost:8000/api/me/notifications/${id}/read`, {
+        method: "PATCH",
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const fetchSeats = async () => {
     try {
@@ -66,7 +104,6 @@ export default function SeatsPage() {
     setIsSubmitting(true);
     setMessage(null);
 
-    
     try {
       const response = await fetch('http://localhost:8000/api/reservations', {
         method: 'POST',
@@ -104,6 +141,25 @@ export default function SeatsPage() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
+      {notifications.length > 0 && (
+        <div className="max-w-6xl mx-auto mb-6 flex flex-col gap-2">
+          {notifications.map(notif => (
+            <div key={notif.id} className="bg-red-900/80 border border-red-500 text-red-100 p-4 rounded-lg flex justify-between items-center shadow-lg shadow-red-900/20">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="text-red-400" size={24} />
+                <span className="font-bold">{notif.message}</span>
+              </div>
+              <button 
+                onClick={() => markNotificationRead(notif.id)} 
+                className="text-red-300 hover:text-white bg-red-950 p-2 rounded-full transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="max-w-6xl mx-auto">
         <h1 className="text-3xl font-bold text-center mb-8 text-red-400">
           Seat Reservation
@@ -188,7 +244,7 @@ export default function SeatsPage() {
                       ? "grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-y-12 gap-x-6 place-items-center"
                       : zone === "Quiet Zone"
                         ? "grid-cols-2 md:grid-cols-4 gap-y-8 gap-x-12 place-items-center bg-gray-900/50 p-6 rounded-xl border border-gray-800"
-                        : "grid-cols-2 gap-8 place-items-center" //Private Zone
+                        : "grid-cols-2 gap-8 place-items-center"
                   }`}
                 >
                   {seats
