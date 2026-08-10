@@ -50,6 +50,11 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         
     return user
 
+def require_admin(current_user: models.User = Depends(get_current_user)):
+    if current_user.role != "admin": # type: ignore
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Brak uprawnień administratora.")
+    return current_user
+
 router = APIRouter(prefix="/api", tags=["Users"])
 
 

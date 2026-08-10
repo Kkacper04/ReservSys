@@ -12,6 +12,7 @@ interface Seat {
   zone: string;
   desk_type: string;
   has_monitor: boolean;
+  is_active: boolean;
 }
 
 export default function SeatsPage() {
@@ -196,13 +197,16 @@ export default function SeatsPage() {
                       <button
                         key={seat.id}
                         onClick={() => setSelectedSeat(selectedSeat === seat.id ? null : seat.id)}
-                        disabled={!seat.is_available}
+                        disabled={!seat.is_available || !seat.is_active}
+                        title={!seat.is_active ? "Out of service" : ""}
                         className={`relative group w-24 h-24 flex flex-col items-center justify-center rounded-xl font-bold transition-all duration-300 shadow-md ${
-                          !seat.is_available
-                            ? "bg-gray-800 text-gray-600 cursor-not-allowed border-2 border-gray-900 opacity-60"
-                            : selectedSeat === seat.id
-                              ? "bg-blue-600 text-white scale-110 ring-4 ring-blue-400 ring-opacity-50 z-10"
-                              : "bg-gradient-to-b from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-gray-200 border-2 border-gray-600 hover:border-blue-400 hover:shadow-blue-900/50 hover:shadow-lg cursor-pointer"
+                          !seat.is_active
+                            ? "bg-zinc-900 text-zinc-700 cursor-not-allowed border-2 border-zinc-800 opacity-40"
+                            : !seat.is_available
+                              ? "bg-gray-800 text-gray-600 cursor-not-allowed border-2 border-gray-900 opacity-60"
+                              : selectedSeat === seat.id
+                                ? "bg-blue-600 text-white scale-110 ring-4 ring-blue-400 ring-opacity-50 z-10"
+                                : "bg-gradient-to-b from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-gray-200 border-2 border-gray-600 hover:border-blue-400 hover:shadow-blue-900/50 hover:shadow-lg cursor-pointer"
                         }`}
                       >
                         <div className="absolute top-0 w-full h-2 bg-white/10 rounded-t-xl"></div>
@@ -212,6 +216,7 @@ export default function SeatsPage() {
                         </span>
                         <span
                           className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-sm flex items-center gap-1 ${
+                            !seat.is_active ? 'bg-zinc-800 text-zinc-600' :
                             seat.desk_type === "private"
                               ? "bg-red-900/40 text-red-300"
                               : seat.desk_type === "booth"
@@ -222,7 +227,7 @@ export default function SeatsPage() {
                           {seat.desk_type}
                         </span>
 
-                        {seat.has_monitor && (
+                        {seat.has_monitor && seat.is_active && (
                           <div
                             className="absolute -top-3 -right-3 bg-slate-800 text-sky-400 w-8 h-8 flex items-center justify-center rounded-xl border border-slate-700 shadow-lg rotate-12 group-hover:rotate-0 group-hover:bg-sky-500 group-hover:text-white transition-all duration-300"
                             title="Seat has a monitor included"
@@ -230,7 +235,14 @@ export default function SeatsPage() {
                             <Laptop size={14} strokeWidth={2.5} />
                           </div>
                         )}
-                        {!seat.is_available && (
+                        {!seat.is_active && (
+                           <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-xl backdrop-blur-[1px] z-20">
+                             <span className="text-red-500 font-black text-xs uppercase tracking-widest bg-red-950/80 px-2 py-1 rounded border border-red-900 rotate-[-15deg]">
+                               Out of<br/>Service
+                             </span>
+                           </div>
+                        )}
+                        {!seat.is_available && seat.is_active && (
                           <div className="absolute -bottom-4 bg-rose-950/80 text-rose-400 px-3 py-1.5 flex items-center gap-1.5 rounded-lg border border-rose-900/50 shadow-sm backdrop-blur-sm z-10">
                             <UserRound size={12} strokeWidth={2.5} />
                             <span className="text-[9px] font-bold uppercase tracking-wider">

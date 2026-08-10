@@ -39,14 +39,24 @@ class SeatResponse(BaseModel):
      desk_type : str
      office_name : str
      has_monitor : bool
+     is_active : bool
      model_config = ConfigDict(from_attributes=True)  
+
 
 class UserResponse(BaseModel):
      id: int
      name: str
      email: str
+     role : str
      model_config = ConfigDict(from_attributes=True)  
 
 class UserLogin(BaseModel):
      email: str
      password: str
+
+class NotificationResponse(BaseModel):
+     id: int
+     message: str
+     is_read: bool
+     created_at: datetime
+     model_config = ConfigDict(from_attributes=True)
