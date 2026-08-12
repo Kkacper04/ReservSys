@@ -59,6 +59,15 @@ export default function SeatsPage() {
     }
   }, [router]);
 
+useEffect(() => {
+  if(startTime && endTime && startTime<endTime){
+    const now = new Date().toISOString().slice(0,16);
+    if(startTime > now){
+      fetchSeats();
+    }
+   }
+  }, [startTime, endTime]);
+
   const fetchNotifications = async () => {
     try {
       const response = await fetch("http://localhost:8000/api/me/notifications", {
@@ -238,13 +247,6 @@ export default function SeatsPage() {
               />
             </div>
           </div>
-
-          <button
-            onClick={fetchSeats}
-            className="bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 rounded-md transition-colors text-sm shadow cursor-pointer"
-          >
-            Check Available Seats
-          </button>
         </div>
 
         {isLoading ? (

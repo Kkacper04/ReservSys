@@ -23,6 +23,8 @@ interface Reservation {
 export default function AdminPanel() {
   const [seats, setSeats] = useState<Seat[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [page, setPage] = useState(1);
+  const limit = 5;
   const router = useRouter();
 
   useEffect(() => {
@@ -44,10 +46,14 @@ export default function AdminPanel() {
   };
 
   const fetchReservations = async () => {
-    const response = await fetch("http://localhost:8000/api/reservations/");
+    const skip = (page -1) * limit
+    const response = await fetch(`http://localhost:8000/api/reservations/?skip=${skip}&limit=${limit}`);
     const data = await response.json();
     setReservations(data);
   };
+   useEffect(() => {
+    fetchReservations();
+  }, [page]);
 
   const cancelReservation = async (id: number) => {
     try {
