@@ -96,15 +96,18 @@ export default function SeatsPage() {
         `http://localhost:8000/api/seats/available?start_time=${startTime}:00&end_time=${endTime}:00`,
       );
       if (!response.ok) {
-        throw new Error("Failed to fetch seats");
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Choose correct time range");
       }
+
+        
       const data = await response.json();
       setSeats(data);
       if (data.length > 0 && selectedOffice === "") {
         setSelectedOffice(data[0].office_name);
       }
     } catch (err: any) {
-      setError(err.message);
+      setMessage({ type: "error", text: err.message });
     } finally {
       setIsLoading(false);
     }
@@ -130,7 +133,9 @@ export default function SeatsPage() {
       });
     
       if (!response.ok) {
-        throw new Error("Reservation failed");
+      
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Reservation failed");
       }
 
       setMessage({ type: "success", text: "Seat reserved successfully!" });
@@ -143,13 +148,7 @@ export default function SeatsPage() {
     }
   };
 
-  if (error)
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900 text-red-500">
-        Error: {error}
-      </div>
-    );
-
+  
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
       {notifications.length > 0 && (
@@ -183,6 +182,15 @@ export default function SeatsPage() {
             <User size={18} />
             My Reservations
           </Link>
+          <button
+            onClick={() => {
+              localStorage.removeItem('token');
+              router.push('/login');
+            }}
+            className="flex items-center gap-2 bg-red-900/30 hover:bg-red-800 text-red-300 hover:text-white px-4 py-2 rounded-lg border border-red-800 transition-colors cursor-pointer"
+          >
+           Logout
+          </button>
         </div>
 
         {message && (
