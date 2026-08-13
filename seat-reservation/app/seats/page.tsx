@@ -71,9 +71,7 @@ useEffect(() => {
   const fetchNotifications = async () => {
     try {
       const response = await fetch("http://localhost:8000/api/me/notifications", {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+        credentials: "include"
       });
       if (response.ok) {
         const data = await response.json();
@@ -88,9 +86,7 @@ useEffect(() => {
     try {
       await fetch(`http://localhost:8000/api/me/notifications/${id}/read`, {
         method: "PATCH",
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+        credentials: "include"
       });
       setNotifications(prev => prev.filter(n => n.id !== id));
     } catch (err) {
@@ -132,8 +128,8 @@ useEffect(() => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
+        credentials: "include",
         body: JSON.stringify({
           seat_id: selectedSeat,
           res_start_time: `${startTime}:00`,
@@ -192,8 +188,11 @@ useEffect(() => {
             My Reservations
           </Link>
           <button
-            onClick={() => {
-              localStorage.removeItem('token');
+            onClick={async() => {
+              await fetch("http://localhost:8000/api/logout",{
+                method: "POST",
+                credentials : "include"
+              });
               router.push('/login');
             }}
             className="flex items-center gap-2 bg-red-900/30 hover:bg-red-800 text-red-300 hover:text-white px-4 py-2 rounded-lg border border-red-800 transition-colors cursor-pointer"

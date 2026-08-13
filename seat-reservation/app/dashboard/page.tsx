@@ -27,23 +27,17 @@ export default function DashboardPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      router.push("/login");
-    } else {
       fetchData();
-    }
   }, [router]);
 
   const fetchData = async () => {
     setIsLoading(true);
-    const token = localStorage.getItem("token");
-    const headers = { Authorization: `Bearer ${token}` };
+    
 
     try {
       const [resResponse, notifResponse] = await Promise.all([
-        fetch("http://localhost:8000/api/reservations/my", { headers }),
-        fetch("http://localhost:8000/api/me/notifications", { headers }),
+        fetch("http://localhost:8000/api/reservations/my", {credentials: "include" }),
+        fetch("http://localhost:8000/api/me/notifications", { credentials: "include" }),
       ]);
 
       if (resResponse.ok) {
@@ -63,9 +57,7 @@ export default function DashboardPage() {
     try {
       await fetch(`http://localhost:8000/api/me/notifications/${id}/read`, {
         method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
+        credentials: "include"
       });
       setNotifications((prev) => prev.filter((n) => n.id !== id));
     } catch (err) {
@@ -77,9 +69,7 @@ export default function DashboardPage() {
     try {
       const response = await fetch(`http://localhost:8000/api/reservations/${id}/my-cancel`, {
         method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
+        credentials: "include"
       });
       if (!response.ok) throw new Error("Failed to cancel reservation");
       fetchData();
