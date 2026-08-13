@@ -1,6 +1,6 @@
 import os
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status,Response, Request
 from sqlalchemy.orm import Session
 import bcrypt
 import schemas, models
@@ -30,12 +30,18 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/login")
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+def get_current_user(request: Request, db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    token = request.cookies.get("access_token")
+    if not token:
+        raise credentials_exception
+
+    if token.startswith("Bearer "):
+        token = token.split(" ")[1]
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub") # type: ignore
@@ -72,13 +78,20 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     return db_user
 
 @router.post("/login", status_code=status.HTTP_200_OK)
-def login(user_credentials : schemas.UserLogin, db: Session = Depends(get_db)):
-
+def login(user_credentials : schemas.UserLogin, response: Response, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == user_credentials.email).first()
     if not user or not verify_password(user_credentials.password, user.password): # type: ignore
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
     access_token = create_access_token(data={"sub": str(user.id)})
-    return {"access_token": access_token, "token_type": "bearer"}
+    response.set_cookie(
+        key= "access_token",
+        value=f"Bearer {access_token}",
+        httponly=True,
+        samesite="lax",
+        max_age=3600
+
+    )
+    return {"message": "Login Succesfull"}
 
 @router.get("/me/notifications", response_model=List[schemas.NotificationResponse])
 def get_my_notifications(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
@@ -98,3 +111,7 @@ def mark_notification_read(notification_id: int, db: Session = Depends(get_db), 
         notification.is_read = True # type: ignore
         db.commit()
     return {"message": "Notification marked as read"}
+@router.post("/logout", status_code=status.HTTP_200_OK)
+def logout(response: Response):
+    response.delete_cookie("access_token")
+    return {"message": "Succesfully logout"}

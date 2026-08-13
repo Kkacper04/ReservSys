@@ -28,13 +28,8 @@ export default function AdminPanel() {
   const router = useRouter();
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      router.push("/login");
-    } else {
       fetchSeats();
       fetchReservations();
-    }
   }, [router]);
 
   const fetchSeats = async () => {
@@ -59,9 +54,7 @@ export default function AdminPanel() {
     try {
       const response = await fetch(`http://localhost:8000/api/reservations/${id}/cancel`, {
         method: "DELETE",
-        headers: {
-          "Authorization": `Bearer ${localStorage.getItem("token")}`,
-        }
+        credentials: "include"
       });
       if (!response.ok) throw new Error("Błąd podczas anulowania");
       fetchReservations();
@@ -74,9 +67,7 @@ export default function AdminPanel() {
     try {
       const response = await fetch(`http://localhost:8000/api/seats/${seatId}/toggle`, {
         method: "PATCH",
-        headers: {
-          "Authorization": `Bearer ${localStorage.getItem("token")}`,
-        },
+        credentials: "include"
       });
 
       if (!response.ok) {
@@ -135,7 +126,7 @@ export default function AdminPanel() {
         <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 mt-8">
           <h2 className="text-xl mb-4 text-orange-300 font-bold">Active Reservations</h2>
           
-          <table className="w-full text-left">
+                    <table className="w-full text-left">
             <thead>
               <tr className="border-b border-gray-700 text-gray-400">
                 <th className="py-3">Reservation ID</th>
@@ -146,26 +137,52 @@ export default function AdminPanel() {
               </tr>
             </thead>
             <tbody>
-              {reservations.filter(r => r.status !== "cancelled").map(res => (
+              {reservations.map(res => (
                 <tr key={res.id} className="border-b border-gray-700/50">
                   <td className="py-3 font-bold">#{res.id}</td>
                   <td className="py-3 text-gray-300">User {res.user_id}</td>
                   <td className="py-3 text-gray-300">Seat {res.seat_id}</td>
                   <td className="py-3">
-                    <span className="text-blue-400">{res.status}</span>
+                    {/* Anulowane rezerwacje są wyszarzane */}
+                    <span className={res.status === 'cancelled' ? "text-gray-500" : "text-blue-400"}>
+                      {res.status}
+                    </span>
                   </td>
                   <td className="py-3">
-                    <button 
-                      onClick={() => cancelReservation(res.id)}
-                      className="px-4 py-1.5 rounded font-bold text-sm bg-orange-900/50 hover:bg-orange-900 text-orange-200 cursor-pointer"
-                    >
-                      Cancel Reservation
-                    </button>
+                    {/* Pokazujemy przycisk "Cancel" tylko jeśli rezerwacja jest aktywna */}
+                    {res.status !== 'cancelled' && (
+                      <button 
+                        onClick={() => cancelReservation(res.id)}
+                        className="px-4 py-1.5 rounded font-bold text-sm bg-orange-900/50 hover:bg-orange-900 text-orange-200 cursor-pointer"
+                      >
+                        Cancel Reservation
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          
+          <div className="flex justify-between items-center mt-6">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className={`px-4 py-2 rounded-lg font-bold ${page === 1 ? 'bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
+            >
+              Previous Page
+            </button>
+            
+            <span className="text-gray-400 font-bold">Page {page}</span>
+            
+            <button
+              onClick={() => setPage(p => p + 1)}
+              disabled={reservations.length < limit}
+              className={`px-4 py-2 rounded-lg font-bold ${reservations.length < limit ? 'bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-gray-700 text-white hover:bg-gray-600'}`}
+            >
+              Next Page
+            </button>
+          </div>
         </div>
       </div>
     </div>
