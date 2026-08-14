@@ -9,6 +9,8 @@ class ReservationStatus(enum.Enum):
     PENDING = "pending"
     CONFIRMED = "confirmed"
     CANCELLED = "cancelled"
+    CHECKED_IN = "checked_in"
+    NO_SHOW = "no_show"
 
 class User(base):
     __tablename__ = "users"
