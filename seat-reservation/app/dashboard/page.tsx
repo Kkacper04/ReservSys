@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/dist/client/components/navigation";
 import { AlertTriangle, X, Clock, CheckCircle, XCircle, ArrowLeft } from "lucide-react";
+import HelpDeskChat from "../components/HelpDeskChat";
 
 interface Reservation {
   id: number;
@@ -249,6 +250,7 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+      <HelpDeskChat />
     </div>
   );
 }

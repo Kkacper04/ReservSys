@@ -4,6 +4,7 @@ import { useRouter } from "next/dist/client/components/navigation";
 import { useState, useEffect } from "react";
 import { Laptop, UserRound, AlertTriangle, X, User } from "lucide-react";
 import Link from "next/link";
+import HelpDeskChat from "../components/HelpDeskChat";
 
 interface NotificationMsg {
   id: number;
@@ -358,6 +359,7 @@ useEffect(() => {
           </button>
         </div>
       </div>
+      <HelpDeskChat />
     </div>
   );
 }

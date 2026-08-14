@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     allowed_origins: str = ""
     algorithm: str = "HS256"
     admin_password: str = ""
+    lm_studio_url: str = "http://localhost:1234/v1"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

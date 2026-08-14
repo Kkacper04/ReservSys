@@ -1,0 +1,20 @@
+IT SUPPORT / HELPDESK - FREQUENTLY ASKED QUESTIONS
+
+1. WiFi Connection
+Network name for employees: ReservSys_Corp
+Password for Warsaw office: WwaCorp2026!
+Password for Poznan office: PznCorp2026!
+Guests should use the "ReservSys_Guest" network, which does not require a password but has a speed limit and restricts access to internal resources (intranet).
+
+2. Printing
+Our offices use the FollowMe printing system.
+To print a document:
+- Select the "FollowMe_Printer" on your computer.
+- Approach any physical printer in the office.
+- Tap your employee badge on the reader at the printer to release and collect your prints.
+
+3. Reporting Equipment Issues at the Workstation
+If the desk, monitor, or chair at your reserved workstation is broken (e.g., monitor not working, broken cable, broken chair adjustment), report it to the office administrator. In the ReservSys administration panel, broken desks are marked as "Out of Service" and blocked from reservations until repaired.
+
+4. Lost Access Badge
+In case of losing your office access badge, you must immediately inform the Security department (security@reservsys.com). The cost of issuing a new badge is 50 PLN. The lost badge will be deactivated instantly.

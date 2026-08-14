@@ -1,11 +1,11 @@
 from datetime import datetime
 from sqlalchemy.orm import Session
 from models import Reservation
-import schemas
+import api_schemas
 import models
 
 
-def create_reservation(db: Session, reservation: schemas.ReservationCreate):
+def create_reservation(db: Session, reservation: api_schemas.ReservationCreate):
     if collision_check(db, reservation.seat_id, reservation.res_start_time, reservation.res_end_time):
         return "SEAT_UNAVAILABLE"
     if user_collision_check(db, reservation.user_id, reservation.res_start_time, reservation.res_end_time):
@@ -49,7 +49,7 @@ def get_available_seats(db: Session, start_time: datetime, end_time: datetime):
 
     all_seats = db.query(models.Seat).all()
     return [
-        schemas.SeatResponse(id=seat.id,seat_number=seat.seat_number,is_available=seat.id not in reserved_ids,office_name=seat.office_name,zone=seat.zone,desk_type=seat.desk_type,has_monitor=seat.has_monitor,is_active=seat.is_active) #type: ignore
+        api_schemas.SeatResponse(id=seat.id,seat_number=seat.seat_number,is_available=seat.id not in reserved_ids,office_name=seat.office_name,zone=seat.zone,desk_type=seat.desk_type,has_monitor=seat.has_monitor,is_active=seat.is_active) #type: ignore
         for seat in all_seats
     ]
 def collision_check(db: Session , seat_id : int,start_time : datetime, end_time : datetime):
