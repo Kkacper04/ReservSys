@@ -2,9 +2,10 @@
 
 import { useRouter } from "next/dist/client/components/navigation";
 import { useState, useEffect } from "react";
-import { Laptop, UserRound, AlertTriangle, X, User } from "lucide-react";
+import { Laptop, UserRound, AlertTriangle, X, User, Map, Grid } from "lucide-react";
 import Link from "next/link";
 import HelpDeskChat from "../components/HelpDeskChat";
+import OfficeMap from "../components/OfficeMap";
 
 interface NotificationMsg {
   id: number;
@@ -27,6 +28,7 @@ export default function SeatsPage() {
   const [seats, setSeats] = useState<Seat[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<"grid" | "map">("grid");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [notifications, setNotifications] = useState<NotificationMsg[]>([]);
   const [message, setMessage] = useState<{
@@ -256,7 +258,34 @@ useEffect(() => {
           <div className="text-center py-12 text-gray-400">Loading...</div>
         ) : (
           <div className="flex flex-col gap-8 mb-10">
-            {Array.from(new Set(seats.filter(s => s.office_name === selectedOffice).map((s) => s.zone))).map((zone) => (
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-xl font-bold text-gray-300">Select your desk</h2>
+              <div className="flex bg-gray-800 rounded-lg p-1 border border-gray-700">
+                <button
+                  onClick={() => setViewMode("grid")}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md font-bold text-sm transition-colors ${viewMode === "grid" ? "bg-blue-600 text-white shadow" : "text-gray-400 hover:text-gray-200"}`}
+                >
+                  <Grid size={16} /> Grid
+                </button>
+                <button
+                  onClick={() => setViewMode("map")}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md font-bold text-sm transition-colors ${viewMode === "map" ? "bg-blue-600 text-white shadow" : "text-gray-400 hover:text-gray-200"}`}
+                >
+                  <Map size={16} /> Map
+                </button>
+              </div>
+            </div>
+
+            {viewMode === "map" ? (
+              <OfficeMap 
+                seats={seats} 
+                selectedSeat={selectedSeat} 
+                onSelectSeat={setSelectedSeat} 
+                selectedOffice={selectedOffice} 
+              />
+            ) : (
+              <>
+                {Array.from(new Set(seats.filter(s => s.office_name === selectedOffice).map((s) => s.zone))).map((zone) => (
               <div
                 key={zone}
                 className="bg-gray-800/50 p-6 rounded-xl border border-gray-700"
@@ -339,9 +368,11 @@ useEffect(() => {
                         )}
                       </button>
                     ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </>
+            )}
           </div>
         )}
 
