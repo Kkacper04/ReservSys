@@ -34,7 +34,7 @@ def create_reservation(reservation: schemas.ReservationCreate, db: Session = Dep
         raise HTTPException(status_code=400, detail="Database error.")
 
 @router.get("/", response_model=List[schemas.ReservationStatus])
-def read_reservations(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def read_reservations(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), current_user: models.User = Depends(require_admin)):
     return crud.get_reservation(db=db, skip=skip, limit=limit)
 
 @router.delete("/{reservation_id}/cancel", status_code=200)

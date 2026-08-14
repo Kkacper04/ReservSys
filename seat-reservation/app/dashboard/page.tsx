@@ -26,9 +26,9 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  useEffect(() => {
+    useEffect(() => {
       fetchData();
-  }, [router]);
+  }, []);
 
   const fetchData = async () => {
     setIsLoading(true);

@@ -1,24 +1,22 @@
-import os
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status,Response, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from sqlalchemy.orm import Session
 import bcrypt
 import schemas, models
 from database import get_db
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import jwt
-from dotenv import load_dotenv
-from fastapi.security import OAuth2PasswordBearer
 from jwt import PyJWTError
-load_dotenv()  
+from config import settings
+ 
 
-SECRET_KEY = os.getenv("SECRET_KEY")
-ALGORITHM = os.getenv("ALGORITHM", "HS256")
+SECRET_KEY = settings.secret_key
+ALGORITHM = settings.algorithm
 ACCESS_TOKEN_EXPIRE_HOURS = 24
 
 def create_access_token(data: dict):
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
+    expire = datetime.now(timezone.utc) + timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -28,7 +26,7 @@ def get_password_hash(password: str) -> str:
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/login")
+
 
 def get_current_user(request: Request, db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
@@ -88,10 +86,9 @@ def login(user_credentials : schemas.UserLogin, response: Response, db: Session 
         value=f"Bearer {access_token}",
         httponly=True,
         samesite="lax",
-        max_age=3600
-
+        max_age=ACCESS_TOKEN_EXPIRE_HOURS * 3600
     )
-    return {"message": "Login Succesfull"}
+    return {"message": "Login Successful"}
 
 @router.get("/me/notifications", response_model=List[schemas.NotificationResponse])
 def get_my_notifications(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
@@ -114,4 +111,4 @@ def mark_notification_read(notification_id: int, db: Session = Depends(get_db), 
 @router.post("/logout", status_code=status.HTTP_200_OK)
 def logout(response: Response):
     response.delete_cookie("access_token")
-    return {"message": "Succesfully logout"}
+    return {"message": "Successfully logged out"}

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/dist/client/components/navigation";
 import { useState, useEffect } from "react";
-import { Laptop, UserRound, Headphones, DoorClosed, AlertTriangle, X, User } from "lucide-react";
+import { Laptop, UserRound, AlertTriangle, X, User } from "lucide-react";
 import Link from "next/link";
 
 interface NotificationMsg {
@@ -25,7 +25,6 @@ interface Seat {
 export default function SeatsPage() {
   const [seats, setSeats] = useState<Seat[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [notifications, setNotifications] = useState<NotificationMsg[]>([]);
@@ -49,15 +48,10 @@ export default function SeatsPage() {
   const [selectedOffice, setSelectedOffice] = useState<string>("");
   const router = useRouter();
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      router.push('/login'); 
-    } else {
-      fetchSeats();
-      fetchNotifications();
-    }
-  }, [router]);
+   useEffect(() => {
+    fetchSeats();
+    fetchNotifications();
+  }, []);
 
 useEffect(() => {
   if(startTime && endTime && startTime<endTime){
@@ -73,6 +67,10 @@ useEffect(() => {
       const response = await fetch("http://localhost:8000/api/me/notifications", {
         credentials: "include"
       });
+            if (response.status === 401) {
+        router.push("/login");
+        return;
+      }
       if (response.ok) {
         const data = await response.json();
         setNotifications(data);
@@ -136,6 +134,11 @@ useEffect(() => {
           res_end_time: `${endTime}:00`,
         }),
       });
+
+      if (response.status === 401) {
+        router.push("/login");
+        return;
+      }
     
       if (!response.ok) {
       
@@ -259,8 +262,6 @@ useEffect(() => {
               >
                 <div className="flex items-center justify-between mb-8 border-b border-gray-700 pb-4">
                   <h2 className="text-2xl font-bold text-blue-300 flex items-center gap-2">
-                    {zone === 'Quiet Zone'  }
-                    {zone === 'Private Room' }
                     {zone}
                   </h2>
                   <span className="text-gray-400 text-sm font-medium bg-gray-900 px-3 py-1 rounded-full border border-gray-700">

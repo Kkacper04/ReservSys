@@ -6,6 +6,7 @@ from main import app
 from database import base, get_db
 import models
 from sqlalchemy.pool import StaticPool
+from routers.users import create_access_token
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 engine = create_engine(
@@ -63,8 +64,8 @@ def test_overbooking():
     db.commit()
     db.close()
 
-    token = __import__("routers.users").users.create_access_token({"sub": "1"})
-    client.cookies.set("access_token", f"Bearer {token}")
+    token1 = create_access_token({"sub": "1"})
+    client.cookies.set("access_token", f"Bearer {token1}")
 
     res1 = client.post("/api/reservations/", json={
         "seat_id": 1,
@@ -74,7 +75,7 @@ def test_overbooking():
     assert res1.status_code == 200
 
     #another user, same seat at the same time
-    token2 = __import__("routers.users").users.create_access_token({"sub": "2"})
+    token2 = create_access_token({"sub": "2"})
     client.cookies.set("access_token", f"Bearer {token2}")
     
     res2 = client.post("/api/reservations/", json={

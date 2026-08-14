@@ -5,6 +5,7 @@ class Settings(BaseSettings):
     secret_key: str = ""
     allowed_origins: str = ""
     algorithm: str = "HS256"
+    admin_password: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
