@@ -51,4 +51,10 @@ next-env.d.ts
 #database
 *.db
 
+# rag vector database
+chroma_db/
+
+# tests
+.pytest_cache/
+
 seed.py

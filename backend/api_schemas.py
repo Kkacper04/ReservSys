@@ -67,3 +67,9 @@ class NotificationResponse(BaseModel):
      is_read: bool
      created_at: datetime
      model_config = ConfigDict(from_attributes=True)
+
+class ChatRequest(BaseModel):
+     message: str
+
+class ChatResponse(BaseModel):
+     reply: str
