@@ -25,10 +25,13 @@ export default function DashboardPage() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [notifications, setNotifications] = useState<NotificationMsg[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentTime, setCurrentTime] = useState(new Date());
   const router = useRouter();
 
-    useEffect(() => {
-      fetchData();
+  useEffect(() => {
+    fetchData();
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(timer);
   }, []);
 
   const fetchData = async () => {
@@ -79,6 +82,19 @@ export default function DashboardPage() {
     }
   };
 
+  const checkinReservation = async (id: number) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/reservations/${id}/checkin`, {
+        method: "PATCH",
+        credentials: "include"
+      });
+      if (!response.ok) throw new Error("Failed to check in");
+      fetchData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "pending":
@@ -87,6 +103,10 @@ export default function DashboardPage() {
         return <CheckCircle size={16} className="text-green-400" />;
       case "cancelled":
         return <XCircle size={16} className="text-red-400" />;
+      case "checked_in":
+        return <CheckCircle size={16} className="text-blue-400" />;
+      case "no_show":
+        return <XCircle size={16} className="text-purple-400" />;
       default:
         return <Clock size={16} className="text-gray-400" />;
     }
@@ -100,6 +120,10 @@ export default function DashboardPage() {
         return "bg-green-900/30 text-green-300 border-green-800";
       case "cancelled":
         return "bg-red-900/30 text-red-300 border-red-800";
+      case "checked_in":
+        return "bg-blue-900/30 text-blue-300 border-blue-800";
+      case "no_show":
+        return "bg-purple-900/30 text-purple-300 border-purple-800";
       default:
         return "bg-gray-900/30 text-gray-300 border-gray-800";
     }
@@ -116,8 +140,15 @@ export default function DashboardPage() {
     });
   };
 
-  const activeReservations = reservations.filter((r) => r.status !== "cancelled");
-  const cancelledReservations = reservations.filter((r) => r.status === "cancelled");
+  const isCheckinAvailable = (res: Reservation) => {
+    if (res.status !== "pending" && res.status !== "confirmed") return false;
+    const startTime = new Date(res.res_start_time);
+    const diffMinutes = (currentTime.getTime() - startTime.getTime()) / (1000 * 60);
+    return diffMinutes >= -15 && diffMinutes <= 15;
+  };
+
+  const activeReservations = reservations.filter((r) => r.status !== "cancelled" && r.status !== "no_show");
+  const cancelledReservations = reservations.filter((r) => r.status === "cancelled" || r.status === "no_show");
 
   if (isLoading) {
     return (
@@ -202,13 +233,26 @@ export default function DashboardPage() {
                       {getStatusIcon(res.status)}
                       {res.status.toUpperCase()}
                     </div>
-                    <button
-                      onClick={() => cancelReservation(res.id)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-red-800 bg-red-900/30 text-red-300 hover:bg-red-900 hover:text-red-100 text-sm font-bold transition-colors cursor-pointer"
-                    >
-                      <XCircle size={14} />
-                      Cancel
-                    </button>
+                    
+                    {isCheckinAvailable(res) && (
+                      <button
+                        onClick={() => checkinReservation(res.id)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-green-500 bg-green-600 text-white hover:bg-green-500 text-sm font-bold transition-colors cursor-pointer shadow-lg shadow-green-900/50"
+                      >
+                        <CheckCircle size={14} />
+                        Check-in
+                      </button>
+                    )}
+
+                    {res.status !== "checked_in" && (
+                      <button
+                        onClick={() => cancelReservation(res.id)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-red-800 bg-red-900/30 text-red-300 hover:bg-red-900 hover:text-red-100 text-sm font-bold transition-colors cursor-pointer"
+                      >
+                        <XCircle size={14} />
+                        Cancel
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

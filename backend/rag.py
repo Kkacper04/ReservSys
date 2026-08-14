@@ -2,7 +2,7 @@ import os
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
@@ -31,13 +31,13 @@ def get_vector_store():
 # Connectcion with LM Studio
 llm = ChatOpenAI(
     base_url=settings.lm_studio_url,
-    api_key="TEXT", 
+    api_key="TEXT", #type: ignore
     temperature=0.1, 
 )
 
 system_prompt = (
     "You are a professional corporate assistant, Office Help Desk. "
-    "Answer colleagues' questions concisely, politely, and specifically in English. "
+    "Answer colleagues' questions co ncisely, politely, and specifically in English. "
     "Base your answers ONLY on the provided context from office documents. "
     "If the answer is not in the context, explicitly state that you don't have such information in the documentation. "
     "I strictly forbid you from using words like: AI, artificial intelligence, bot, language model. "
