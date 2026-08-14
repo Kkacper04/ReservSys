@@ -30,9 +30,6 @@ export default function LoginPage() {
         throw new Error('Invalid email or password');
       }
 
-      const data = await response.json();
-      
-      localStorage.setItem('token', data.access_token);
       router.push('/seats');
       
     } catch (err: any) {

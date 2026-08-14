@@ -27,10 +27,24 @@ export default function AdminPanel() {
   const limit = 5;
   const router = useRouter();
 
-  useEffect(() => {
-      fetchSeats();
-      fetchReservations();
-  }, [router]);
+     useEffect(() => {
+    const init = async () => {
+      try {
+        const res = await fetch(`http://localhost:8000/api/reservations/?skip=0&limit=${limit}`, {
+          credentials: "include"
+        });
+        if (res.status === 403 || res.status === 401) {
+          router.push("/seats");
+          return;
+        }
+
+        fetchSeats();
+      } catch {
+        router.push("/login");
+      }
+    };
+    init();
+  }, []);
 
   const fetchSeats = async () => {
     const now = new Date().toISOString();
@@ -42,7 +56,7 @@ export default function AdminPanel() {
 
   const fetchReservations = async () => {
     const skip = (page -1) * limit
-    const response = await fetch(`http://localhost:8000/api/reservations/?skip=${skip}&limit=${limit}`);
+    const response = await fetch(`http://localhost:8000/api/reservations/?skip=${skip}&limit=${limit}`, {credentials : "include"});
     const data = await response.json();
     setReservations(data);
   };

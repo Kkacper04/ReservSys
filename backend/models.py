@@ -34,7 +34,7 @@ class Seat(base):
     has_monitor = Column(Boolean, nullable=False)
     is_active = Column(Boolean, nullable=False, default=True) #workspace working status, if the seat is broken or under maintenance, it will be marked as inactive and cannot be reserved
 
-    reservations = relationship("Reservation", back_populates="seat")   # 1 seat can have many reservations( few people can reserve the same seat for different films)
+    reservations = relationship("Reservation", back_populates="seat")   # 1 seat can have many reservations(different people can reserve the same seat at different times)
 
 class Reservation(base):
     __tablename__= "reservations"

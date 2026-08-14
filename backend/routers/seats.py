@@ -9,8 +9,14 @@ from routers.users import require_admin
 router = APIRouter(prefix="/api/seats", tags=["Seats"])
 
 @router.post("/", response_model=schemas.SeatCreate)
-def create_seat(seat: schemas.SeatCreate, db: Session = Depends(get_db)):
-    db_seat = models.Seat(seat_number=seat.seat_number)
+def create_seat(seat: schemas.SeatCreate, db: Session = Depends(get_db), current_user: models.User = Depends(require_admin)):
+    db_seat = models.Seat(
+        seat_number=seat.seat_number,
+        zone=seat.zone,
+        office_name=seat.office_name,
+        desk_type=seat.desk_type,
+        has_monitor=seat.has_monitor
+    )
     db.add(db_seat)
     db.commit()
     db.refresh(db_seat)
