@@ -13,8 +13,13 @@ async def auto_cancel_no_shows():
         try:
             db = SessionLocal()
             now = datetime.now(timezone.utc)
+            cutoff = now - timedelta(minutes=15)
             expired_reservations = db.query(models.Reservation).filter(
-                models.Reservation.status == models.ReservationStatus.CONFIRMED
+                models.Reservation.status.in_([
+                    models.ReservationStatus.CONFIRMED,
+                    models.ReservationStatus.PENDING
+                ]),
+                models.Reservation.res_start_time < cutoff
             ).all()
 
             for res in expired_reservations:
