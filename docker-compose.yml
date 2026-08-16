@@ -1,9 +1,7 @@
-version: '3.8'
-
 services:
   db:
-    image: postgres:15
-    container_name: reservation_db
+    image: postgres:15-alpine
+    container_name: reservsys_db
     restart: always
     environment:
       POSTGRES_USER: admin
@@ -13,6 +11,35 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d reservation_system"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    container_name: reservsys_backend
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://admin:admin@db:5432/reservation_system
+      - ADMIN_PASSWORD=admin
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./seat-reservation
+    container_name: reservsys_frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
 
 volumes:
   pgdata:
