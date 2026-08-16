@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/dist/client/components/navigation";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 interface Seat {
   id: number;
@@ -24,6 +25,8 @@ export default function AdminPanel() {
   const [seats, setSeats] = useState<Seat[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [page, setPage] = useState(1);
+  const [activeTab, setActiveTab] = useState<"management" | "analytics">("management");
+  const [analytics, setAnalytics] = useState<any>(null);
   const limit = 5;
   const router = useRouter();
 
@@ -60,9 +63,28 @@ export default function AdminPanel() {
     const data = await response.json();
     setReservations(data);
   };
-   useEffect(() => {
+  
+  const fetchAnalytics = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/api/admin/analytics", {credentials: "include"});
+      if (response.ok) {
+        const data = await response.json();
+        setAnalytics(data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
     fetchReservations();
   }, [page]);
+
+  useEffect(() => {
+    if (activeTab === "analytics" && !analytics) {
+      fetchAnalytics();
+    }
+  }, [activeTab]);
 
   const cancelReservation = async (id: number) => {
     try {
@@ -94,13 +116,32 @@ export default function AdminPanel() {
     }
   };
 
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF'];
+
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8 text-blue-400">Admin Panel</h1>
+      <div className="max-w-6xl mx-auto">
+        <h1 className="text-3xl font-bold mb-6 text-blue-400">Admin Panel</h1>
         
-        <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
-          <h2 className="text-xl mb-4">Desk Management</h2>
+        <div className="flex gap-4 mb-8 border-b border-gray-700 pb-2">
+          <button 
+            onClick={() => setActiveTab("management")}
+            className={`px-4 py-2 font-bold transition-colors ${activeTab === "management" ? "text-blue-400 border-b-2 border-blue-400" : "text-gray-400 hover:text-gray-200"}`}
+          >
+            Management
+          </button>
+          <button 
+            onClick={() => setActiveTab("analytics")}
+            className={`px-4 py-2 font-bold transition-colors ${activeTab === "analytics" ? "text-blue-400 border-b-2 border-blue-400" : "text-gray-400 hover:text-gray-200"}`}
+          >
+            Analytics
+          </button>
+        </div>
+
+        {activeTab === "management" ? (
+          <>
+            <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
+              <h2 className="text-xl mb-4">Desk Management</h2>
           
           <table className="w-full text-left">
             <thead>
@@ -157,13 +198,13 @@ export default function AdminPanel() {
                   <td className="py-3 text-gray-300">User {res.user_id}</td>
                   <td className="py-3 text-gray-300">Seat {res.seat_id}</td>
                   <td className="py-3">
-                    {/* Anulowane rezerwacje są wyszarzane */}
+                 
                     <span className={res.status === 'cancelled' ? "text-gray-500" : "text-blue-400"}>
                       {res.status}
                     </span>
                   </td>
                   <td className="py-3">
-                    {/* Pokazujemy przycisk "Cancel" tylko jeśli rezerwacja jest aktywna */}
+                   
                     {res.status !== 'cancelled' && (
                       <button 
                         onClick={() => cancelReservation(res.id)}
@@ -198,6 +239,72 @@ export default function AdminPanel() {
             </button>
           </div>
         </div>
+        </>
+        ) : (
+          analytics ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg">
+                <h2 className="text-xl font-bold mb-6 text-gray-200">Reservations by Status</h2>
+                <div className="h-80 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={Object.entries(analytics.status_breakdown).map(([k, v]) => ({ name: k, value: v }))}
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={100}
+                        fill="#8884d8"
+                        dataKey="value"
+                        label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                      >
+                        {Object.entries(analytics.status_breakdown).map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <RechartsTooltip contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', color: 'white' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              
+              <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg">
+                <h2 className="text-xl font-bold mb-6 text-gray-200">Most Popular Seats</h2>
+                <div className="h-80 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={analytics.popular_seats}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                      <XAxis dataKey="seat" stroke="#9ca3af" />
+                      <YAxis stroke="#9ca3af" allowDecimals={false} />
+                      <RechartsTooltip contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', color: 'white' }} />
+                      <Legend />
+                      <Bar dataKey="count" fill="#3b82f6" name="Total Reservations" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+            
+              <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg lg:col-span-2">
+                <h2 className="text-xl font-bold mb-6 text-gray-200">Total Reservations by Zone & Office</h2>
+                <div className="h-80 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={analytics.zone_breakdown}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                      <XAxis dataKey="zone" stroke="#9ca3af" />
+                      <YAxis stroke="#9ca3af" allowDecimals={false} />
+                      <RechartsTooltip contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', color: 'white' }} />
+                      <Legend />
+                      <Bar dataKey="count" fill="#10b981" name="Reservations" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-12 text-gray-400">Loading analytics...</div>
+          )
+        )}
       </div>
     </div>
   );
