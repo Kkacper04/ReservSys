@@ -15,11 +15,11 @@ class ReservationStatus(enum.Enum):
 class User(base):
     __tablename__ = "users"
 
-    id= Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, index=True, nullable=False)
-    email = Column(String, unique=True, index=True, nullable=False)
-    password = Column(String, nullable=False)
-    role = Column(String, nullable=False, default="employee")  # role can be "employee" or "admin"
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
+    email: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
+    password: Mapped[str] = mapped_column(String, nullable=False)
+    role: Mapped[str] = mapped_column(String, nullable=False, default="employee")  # role can be "employee" or "admin"
     reservations = relationship("Reservation", back_populates="user")   # 1 user can have many reservations
     notification = relationship("Notification", back_populates="user")  # 1 user can have many notifications
 
@@ -27,23 +27,23 @@ class User(base):
 class Seat(base):
     __tablename__ = "seats"
 
-    id= Column(Integer, primary_key=True, index=True)
-    seat_number = Column(String, index=True, nullable=False)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    seat_number: Mapped[str] = mapped_column(String, index=True, nullable=False)
     # Additonal attributes for seat properties (ReservSys allows to rent cooworking spaces in the office)
-    zone = Column(String, nullable=False)
-    office_name = Column(String, nullable=False)
-    desk_type = Column(String, nullable=False)
-    has_monitor = Column(Boolean, nullable=False)
-    is_active = Column(Boolean, nullable=False, default=True) #workspace working status, if the seat is broken or under maintenance, it will be marked as inactive and cannot be reserved
+    zone: Mapped[str] = mapped_column(String, nullable=False)
+    office_name: Mapped[str] = mapped_column(String, nullable=False)
+    desk_type: Mapped[str] = mapped_column(String, nullable=False)
+    has_monitor: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True) #workspace working status, if the seat is broken or under maintenance, it will be marked as inactive and cannot be reserved
 
     reservations = relationship("Reservation", back_populates="seat")   # 1 seat can have many reservations(different people can reserve the same seat at different times)
 
 class Reservation(base):
     __tablename__= "reservations"
 
-    id= Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    seat_id = Column(Integer, ForeignKey("seats.id"), nullable=False)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    seat_id: Mapped[int] = mapped_column(ForeignKey("seats.id"), nullable=False)
 
     res_start_time : Mapped[datetime] = mapped_column(DateTime(timezone=True))
     res_end_time  : Mapped[datetime] = mapped_column(DateTime(timezone=True))
@@ -58,10 +58,11 @@ class Reservation(base):
     )
 class Notification(base):
     __tablename__ = "notifications"
+    
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    message: Mapped[str] = mapped_column(String, nullable=False)
+    is_read: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    message = Column(String, nullable=False)
-    is_read = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    user = relationship("User", back_populates="notification")  
+    user = relationship("User", back_populates="notification")

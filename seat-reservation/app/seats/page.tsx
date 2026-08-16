@@ -48,6 +48,8 @@ export default function SeatsPage() {
   const defaults = getDefaultTimes();
   const [startTime, setStartTime] = useState(defaults.start);
   const [endTime, setEndTime] = useState(defaults.end);
+  const [recurrenceRule, setRecurrenceRule] = useState<string>("none");
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState<string>("");
   const [selectedOffice, setSelectedOffice] = useState<string>("");
   const router = useRouter();
 
@@ -135,6 +137,8 @@ useEffect(() => {
           seat_id: selectedSeat,
           res_start_time: `${startTime}:00`,
           res_end_time: `${endTime}:00`,
+          recurrence_rule: recurrenceRule === "none" ? null : recurrenceRule,
+          recurrence_end_date: recurrenceRule === "none" || !recurrenceEndDate ? null : `${recurrenceEndDate}T23:59:00`,
         }),
       });
 
@@ -250,6 +254,33 @@ useEffect(() => {
                 onChange={(e) => setEndTime(e.target.value)}
                 className="bg-gray-900 border border-gray-700 rounded-md p-2 text-white text-sm focus:outline-none focus:border-blue-500"
               />
+            </div>
+          </div>
+
+          <div className="flex flex-col border-t border-gray-700 pt-5 mt-2">
+            <label className="text-gray-300 font-bold mb-2">Repeat Reservation:</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <select 
+                value={recurrenceRule} 
+                onChange={(e) => setRecurrenceRule(e.target.value)}
+                className="bg-gray-900 border border-gray-700 rounded-md p-2 text-white text-sm focus:outline-none focus:border-blue-500 cursor-pointer"
+              >
+                <option value="none">Does not repeat</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+              </select>
+
+              {recurrenceRule !== "none" && (
+                <div className="flex flex-col">
+                  <label className="text-xs text-gray-400 mb-1">Until (End Date):</label>
+                  <input
+                    type="date"
+                    value={recurrenceEndDate}
+                    onChange={(e) => setRecurrenceEndDate(e.target.value)}
+                    className="bg-gray-900 border border-gray-700 rounded-md p-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>

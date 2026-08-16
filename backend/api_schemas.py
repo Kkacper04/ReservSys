@@ -7,6 +7,8 @@ class ReservationCreate(BaseModel):
     seat_id: int
     res_start_time: datetime
     res_end_time: datetime
+    recurrence_rule: str | None = None
+    recurrence_end_date: datetime | None = None
 
 class ReservationStatus(BaseModel):
     id: int
