@@ -46,8 +46,6 @@ async def lifespan(app: FastAPI):
     yield
     task.cancel()
 
-models.base.metadata.create_all(bind=engine)
-
 app = FastAPI(title='Reservation System API', lifespan=lifespan)
 
 origins = settings.allowed_origins.split(",")
