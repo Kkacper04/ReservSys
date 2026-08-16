@@ -84,4 +84,4 @@ def test_overbooking():
         "res_end_time": "2030-01-01T15:00:00"
     })
     assert res2.status_code == 400
-    assert "The seat is already reserved" in res2.json()["detail"]
+    assert "The seat is unavailable" in res2.json()["detail"]

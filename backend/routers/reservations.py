@@ -13,23 +13,56 @@ from datetime import datetime, timedelta, timezone
 
 router = APIRouter(prefix="/api/reservations", tags=["Reservations"])
 
-@router.post("/", response_model=SchemaReservationStatus)
+@router.post("/", response_model=List[SchemaReservationStatus])
 def create_reservation(reservation: ReservationCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     reservation.user_id = current_user.id 
-    now = datetime.now(reservation.res_start_time.tzinfo)  # Use the timezone of the reservation start time
+    now = datetime.now(reservation.res_start_time.tzinfo)
     if reservation.res_start_time < now:
         raise HTTPException(status_code=400, detail="Reservation start time must be in the future.")
     if reservation.res_start_time >= reservation.res_end_time:
         raise HTTPException(status_code=400, detail="Reservation end time must be after the start time.")
+
+    dates_to_book = []
+    current_start = reservation.res_start_time
+    current_end = reservation.res_end_time
+
+    if reservation.recurrence_rule and reservation.recurrence_end_date:
+        if reservation.recurrence_end_date < current_start:
+            raise HTTPException(status_code=400, detail="Recurrence end date must be after the start date.")
+            
+        while current_start <= reservation.recurrence_end_date:
+            dates_to_book.append((current_start, current_end))
+            if reservation.recurrence_rule == 'daily':
+                current_start += timedelta(days=1)
+                current_end += timedelta(days=1)
+            elif reservation.recurrence_rule == 'weekly':
+                current_start += timedelta(weeks=1)
+                current_end += timedelta(weeks=1)
+            else:
+                break
+    else:
+        dates_to_book.append((current_start, current_end))
+        
+    for start, end in dates_to_book:
+        if crud.collision_check(db, reservation.seat_id, start, end):
+            raise HTTPException(status_code=400, detail=f"The seat is unavailable on {start.strftime('%Y-%m-%d %H:%M')}.")
+        if crud.user_collision_check(db, reservation.user_id, start, end):
+             raise HTTPException(status_code=400, detail=f"You already have a reservation overlapping on {start.strftime('%Y-%m-%d %H:%M')}.")
+
+    created_reservations = []
     try:
-        new_reservation = crud.create_reservation(db=db, reservation=reservation)
-        if new_reservation == "SEAT_UNAVAILABLE":
-            raise HTTPException(status_code=400, detail="The seat is already reserved for the specified time window.")
-        if new_reservation == "OVERBOOKED":
-            raise HTTPException(status_code=400, detail="You already have a reservation that overlaps with the specified time window.")
-        if new_reservation is None:
-            raise HTTPException(status_code=400, detail="The seat is already reserved for the specified time window.")
-        return new_reservation
+        for start, end in dates_to_book:
+            res_clone = ReservationCreate(
+                user_id=reservation.user_id,
+                seat_id=reservation.seat_id,
+                res_start_time=start,
+                res_end_time=end,
+                recurrence_rule=None,
+                recurrence_end_date=None
+            )
+            new_res = crud.create_reservation(db=db, reservation=res_clone)
+            created_reservations.append(new_res)
+        return created_reservations
     except IntegrityError:
         db.rollback()
         raise HTTPException(status_code=400, detail="Database error.")
