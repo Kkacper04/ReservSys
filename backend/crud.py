@@ -41,7 +41,7 @@ def get_available_seats(db: Session, start_time: datetime, end_time: datetime):
         .filter(
             models.Reservation.res_start_time < end_time,
             models.Reservation.res_end_time > start_time,
-            models.Reservation.status != models.ReservationStatus.CANCELLED
+            models.Reservation.status.notin_([models.ReservationStatus.CANCELLED, models.ReservationStatus.NO_SHOW])
         )
         .all()
     )
@@ -57,7 +57,7 @@ def collision_check(db: Session , seat_id : int,start_time : datetime, end_time 
         models.Reservation.seat_id == seat_id,
         models.Reservation.res_start_time < end_time,
         models.Reservation.res_end_time > start_time,
-        models.Reservation.status != models.ReservationStatus.CANCELLED
+        models.Reservation.status.notin_([models.ReservationStatus.CANCELLED, models.ReservationStatus.NO_SHOW])
     ).first()
     return collision
 def user_collision_check(db: Session , user_id : int,start_time : datetime, end_time : datetime):
@@ -65,6 +65,6 @@ def user_collision_check(db: Session , user_id : int,start_time : datetime, end_
         models.Reservation.user_id == user_id,
         models.Reservation.res_start_time < end_time,
         models.Reservation.res_end_time > start_time,
-        models.Reservation.status != models.ReservationStatus.CANCELLED
+        models.Reservation.status.notin_([models.ReservationStatus.CANCELLED, models.ReservationStatus.NO_SHOW])
     ).first()
     return collision
