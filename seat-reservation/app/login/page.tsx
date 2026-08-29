@@ -62,13 +62,13 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+              placeholder="Enter your email"
               required
-              className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              
             />
           </div>
 
-          <div>
+          <div className="mb-6">
             <label className="block text-gray-400 text-sm font-bold mb-2" htmlFor="password">
               Password
             </label>
@@ -77,29 +77,32 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+              placeholder="Enter your password"
               required
-              className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             />
           </div>
 
           <button
             type="submit"
             disabled={isLoading}
-            className={`w-full py-3 px-4 rounded-lg font-bold text-lg transition-all ${
+            className={`w-full font-bold py-3 px-4 rounded-lg transition-all ${
               isLoading
-                ? 'bg-blue-600/50 cursor-not-allowed text-gray-300'
-                : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/50'
+                ? 'bg-emerald-600/50 cursor-not-allowed text-gray-300'
+                : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/50'
             }`}
           >
-            {isLoading ? 'Signing in...' : 'Sign In'}
+            {isLoading ? 'Logging in...' : 'Sign In'}
           </button>
         </form>
 
-        <div className="mt-6 text-center text-gray-400 text-sm">
-          Don't have an account?{' '}
-          <Link href="/register" className="text-red-400 hover:text-blue-300 font-bold transition-colors">
-            Sign up here
-          </Link>
+        <div className="mt-6 text-center">
+          <p className="text-gray-400">
+            Don't have an account?{' '}
+            <Link href="/register" className="text-emerald-400 hover:text-emerald-300 font-bold transition-colors">
+              Sign up
+            </Link>
+          </p>
         </div>
       </div>
     </div>

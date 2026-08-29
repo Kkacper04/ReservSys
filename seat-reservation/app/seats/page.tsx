@@ -224,7 +224,7 @@ useEffect(() => {
             <select 
               value={selectedOffice} 
               onChange={(e) => setSelectedOffice(e.target.value)}
-              className="bg-gray-900 border border-gray-600 rounded-md p-3 text-white text-lg font-semibold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all cursor-pointer"
+              className="bg-gray-900 border border-gray-600 rounded-md p-3 text-white text-lg font-semibold focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all cursor-pointer"
             >
               {Array.from(new Set(seats.map(s => s.office_name))).map(office => (
                 <option key={office} value={office}>{office}</option>
@@ -242,7 +242,7 @@ useEffect(() => {
                 type="datetime-local"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                className="bg-gray-900 border border-gray-700 rounded-md p-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                className="bg-gray-900 border border-gray-700 rounded-md p-2 text-white text-sm focus:outline-none focus:border-emerald-500"
               />
             </div>
 
@@ -252,7 +252,7 @@ useEffect(() => {
                 type="datetime-local"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
-                className="bg-gray-900 border border-gray-700 rounded-md p-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                className="bg-gray-900 border border-gray-700 rounded-md p-2 text-white text-sm focus:outline-none focus:border-emerald-500"
               />
             </div>
           </div>
@@ -263,7 +263,7 @@ useEffect(() => {
               <select 
                 value={recurrenceRule} 
                 onChange={(e) => setRecurrenceRule(e.target.value)}
-                className="bg-gray-900 border border-gray-700 rounded-md p-2 text-white text-sm focus:outline-none focus:border-blue-500 cursor-pointer"
+                className="bg-gray-900 border border-gray-700 rounded-md p-2 text-white text-sm focus:outline-none focus:border-emerald-500 cursor-pointer"
               >
                 <option value="none">Does not repeat</option>
                 <option value="daily">Daily</option>
@@ -277,7 +277,7 @@ useEffect(() => {
                     type="date"
                     value={recurrenceEndDate}
                     onChange={(e) => setRecurrenceEndDate(e.target.value)}
-                    className="bg-gray-900 border border-gray-700 rounded-md p-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                    className="bg-gray-900 border border-gray-700 rounded-md p-2 text-white text-sm focus:outline-none focus:border-emerald-500"
                   />
                 </div>
               )}
@@ -294,13 +294,13 @@ useEffect(() => {
               <div className="flex bg-gray-800 rounded-lg p-1 border border-gray-700">
                 <button
                   onClick={() => setViewMode("grid")}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-md font-bold text-sm transition-colors ${viewMode === "grid" ? "bg-blue-600 text-white shadow" : "text-gray-400 hover:text-gray-200"}`}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md font-bold text-sm transition-colors ${viewMode === "grid" ? "bg-emerald-600 text-white shadow" : "text-gray-400 hover:text-gray-200"}`}
                 >
                   <Grid size={16} /> Grid
                 </button>
                 <button
                   onClick={() => setViewMode("map")}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-md font-bold text-sm transition-colors ${viewMode === "map" ? "bg-blue-600 text-white shadow" : "text-gray-400 hover:text-gray-200"}`}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md font-bold text-sm transition-colors ${viewMode === "map" ? "bg-emerald-600 text-white shadow" : "text-gray-400 hover:text-gray-200"}`}
                 >
                   <Map size={16} /> Map
                 </button>
@@ -322,7 +322,7 @@ useEffect(() => {
                 className="bg-gray-800/50 p-6 rounded-xl border border-gray-700"
               >
                 <div className="flex items-center justify-between mb-8 border-b border-gray-700 pb-4">
-                  <h2 className="text-2xl font-bold text-blue-300 flex items-center gap-2">
+                  <h2 className="text-2xl font-bold text-emerald-300 flex items-center gap-2">
                     {zone}
                   </h2>
                   <span className="text-gray-400 text-sm font-medium bg-gray-900 px-3 py-1 rounded-full border border-gray-700">
@@ -352,8 +352,8 @@ useEffect(() => {
                             : !seat.is_available
                               ? "bg-gray-800 text-gray-600 cursor-not-allowed border-2 border-gray-900 opacity-60"
                               : selectedSeat === seat.id
-                                ? "bg-blue-600 text-white scale-110 ring-4 ring-blue-400 ring-opacity-50 z-10"
-                                : "bg-gradient-to-b from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-gray-200 border-2 border-gray-600 hover:border-blue-400 hover:shadow-blue-900/50 hover:shadow-lg cursor-pointer"
+                                ? "bg-emerald-600 text-white scale-110 ring-4 ring-emerald-400 ring-opacity-50 z-10"
+                                : "bg-gradient-to-b from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-gray-200 border-2 border-gray-600 hover:border-emerald-400 hover:shadow-emerald-900/50 hover:shadow-lg cursor-pointer"
                         }`}
                       >
                         <div className="absolute top-0 w-full h-2 bg-white/10 rounded-t-xl"></div>
@@ -367,7 +367,7 @@ useEffect(() => {
                             seat.desk_type === "private"
                               ? "bg-red-900/40 text-red-300"
                               : seat.desk_type === "booth"
-                                ? "bg-purple-900/50 text-purple-300"
+                                ? "bg-zinc-900/50 text-zinc-300"
                                 : "bg-gray-900/50 text-gray-400"
                           }`}
                         >
