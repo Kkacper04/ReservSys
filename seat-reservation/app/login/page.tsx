@@ -17,7 +17,7 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:8000/api/login', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -54,7 +54,7 @@ export default function LoginPage() {
 
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
-            <label className="block text-gray-400 text-sm font-bold mb-2" htmlFor="email">
+            <label className="block text-zinc-400 text-sm font-bold mb-2" htmlFor="email">
               Email Address
             </label>
             <input
@@ -62,14 +62,14 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+              className="w-full px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
               placeholder="Enter your email"
               required
             />
           </div>
 
           <div className="mb-6">
-            <label className="block text-gray-400 text-sm font-bold mb-2" htmlFor="password">
+            <label className="block text-zinc-400 text-sm font-bold mb-2" htmlFor="password">
               Password
             </label>
             <input
@@ -77,7 +77,7 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+              className="w-full px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
               placeholder="Enter your password"
               required
             />
@@ -88,7 +88,7 @@ export default function LoginPage() {
             disabled={isLoading}
             className={`w-full font-bold py-3 px-4 rounded-lg transition-all ${
               isLoading
-                ? 'bg-emerald-600/50 cursor-not-allowed text-gray-300'
+                ? 'bg-emerald-600/50 cursor-not-allowed text-zinc-300'
                 : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/50'
             }`}
           >
@@ -97,7 +97,7 @@ export default function LoginPage() {
         </form>
 
         <div className="mt-6 text-center">
-          <p className="text-gray-400">
+          <p className="text-zinc-400">
             Don't have an account?{' '}
             <Link href="/register" className="text-emerald-400 hover:text-emerald-300 font-bold transition-colors">
               Sign up

@@ -73,7 +73,7 @@ export default function OfficeMap({ seats, selectedSeat, onSelectSeat, selectedO
   const svgHeight = Math.max(maxY + 150, 700);
 
   return (
-    <div className="w-full overflow-x-auto bg-gray-900/50 rounded-xl border border-gray-700 shadow-inner p-4 custom-scrollbar">
+    <div className="w-full overflow-x-auto bg-zinc-900/50 rounded-xl border border-zinc-700 shadow-inner p-4 custom-scrollbar">
       <div className="min-w-[800px] relative">
         <svg 
           width="100%" 
@@ -141,7 +141,7 @@ export default function OfficeMap({ seats, selectedSeat, onSelectSeat, selectedO
                   fill={rectFill} 
                   stroke={isSelected ? "#34d399" : rectStroke} 
                   strokeWidth={isSelected ? "3" : "2"}
-                  className={`transition-all duration-300 ${seat.is_active && seat.is_available && !isSelected ? "hover:fill-gray-600 hover:stroke-gray-400" : ""}`}
+                  className={`transition-all duration-300 ${seat.is_active && seat.is_available && !isSelected ? "hover:fill-zinc-600 hover:stroke-zinc-400" : ""}`}
                 />
                 
                 
