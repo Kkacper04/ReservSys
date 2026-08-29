@@ -48,11 +48,33 @@ def get_available_seats(db: Session, start_time: datetime, end_time: datetime):
     reserved_ids = {row[0] for row in busy_seat_ids}
 
     all_seats = db.query(models.Seat).all()
-    return [
-        api_schemas.SeatResponse(id=seat.id,seat_number=seat.seat_number,is_available=seat.id not in reserved_ids,office_name=seat.office_name,zone=seat.zone,desk_type=seat.desk_type,has_monitor=seat.has_monitor,is_active=seat.is_active) #type: ignore
-        for seat in all_seats
-    ]
+    response = []
+    for seat in all_seats:
+        is_active_for_period = seat.is_active
+        if seat.maintenance_start and seat.maintenance_end:
+            if start_time < seat.maintenance_end and end_time > seat.maintenance_start:
+                is_active_for_period = False
+                
+        response.append(
+            api_schemas.SeatResponse(
+                id=seat.id,
+                seat_number=seat.seat_number,
+                is_available=seat.id not in reserved_ids,
+                office_name=seat.office_name,
+                zone=seat.zone,
+                desk_type=seat.desk_type,
+                has_monitor=seat.has_monitor,
+                is_active=is_active_for_period
+            )
+        )
+    return response
+
 def collision_check(db: Session , seat_id : int,start_time : datetime, end_time : datetime):
+    seat = db.query(models.Seat).filter(models.Seat.id == seat_id).with_for_update().first()
+    if seat and seat.maintenance_start and seat.maintenance_end:
+        if start_time < seat.maintenance_end and end_time > seat.maintenance_start:
+            return True
+
     collision = db.query(models.Reservation).filter(
         models.Reservation.seat_id == seat_id,
         models.Reservation.res_start_time < end_time,

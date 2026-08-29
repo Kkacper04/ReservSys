@@ -22,6 +22,9 @@ def create_reservation(reservation: ReservationCreate, db: Session = Depends(get
     if reservation.res_start_time >= reservation.res_end_time:
         raise HTTPException(status_code=400, detail="Reservation end time must be after the start time.")
 
+    if (reservation.res_end_time - reservation.res_start_time).total_seconds() > 16 * 3600:
+        raise HTTPException(status_code=400, detail="Single reservation cannot exceed 16 hours.")
+
     dates_to_book = []
     current_start = reservation.res_start_time
     current_end = reservation.res_end_time
@@ -30,7 +33,10 @@ def create_reservation(reservation: ReservationCreate, db: Session = Depends(get
         if reservation.recurrence_end_date < current_start:
             raise HTTPException(status_code=400, detail="Recurrence end date must be after the start date.")
             
+        max_occurrences = 30
         while current_start <= reservation.recurrence_end_date:
+            if len(dates_to_book) >= max_occurrences:
+                raise HTTPException(status_code=400, detail=f"Maximum allowed recurrences is {max_occurrences}.")
             dates_to_book.append((current_start, current_end))
             if reservation.recurrence_rule == 'daily':
                 current_start += timedelta(days=1)
@@ -96,10 +102,10 @@ def admin_cancel_reservation(reservation_id: int, db: Session = Depends(get_db),
     return {"message": "Reservation cancelled."}
 
 @router.get("/my", response_model=List[SchemaReservationStatus])
-def get_my_reservations(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def get_my_reservations(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     return db.query(Reservation).filter(
         Reservation.user_id == current_user.id
-    ).all()
+    ).order_by(Reservation.res_start_time.desc()).offset(skip).limit(limit).all()
 
 @router.patch("/{reservation_id}/my-cancel", status_code=200)
 def user_cancel_reservation(reservation_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
