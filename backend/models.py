@@ -35,6 +35,8 @@ class Seat(base):
     desk_type: Mapped[str] = mapped_column(String, nullable=False)
     has_monitor: Mapped[bool] = mapped_column(Boolean, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True) #workspace working status, if the seat is broken or under maintenance, it will be marked as inactive and cannot be reserved
+    maintenance_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    maintenance_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
 
     reservations = relationship("Reservation", back_populates="seat")   # 1 seat can have many reservations(different people can reserve the same seat at different times)
 

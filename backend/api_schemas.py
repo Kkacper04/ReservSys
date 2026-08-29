@@ -37,6 +37,10 @@ class SeatCreate(BaseModel):
      office_name : str
      has_monitor : bool
 
+class ToggleSeatRequest(BaseModel):
+    maintenance_start: datetime | None = None
+    maintenance_end: datetime | None = None
+
 class ReservationStatusUpdate(BaseModel):
      status : str
 
