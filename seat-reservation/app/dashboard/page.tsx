@@ -26,6 +26,7 @@ export default function DashboardPage() {
   const [notifications, setNotifications] = useState<NotificationMsg[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [userRole, setUserRole] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -39,9 +40,10 @@ export default function DashboardPage() {
     
 
     try {
-      const [resResponse, notifResponse] = await Promise.all([
-        fetch("http://localhost:8000/api/reservations/my", {credentials: "include" }),
-        fetch("http://localhost:8000/api/me/notifications", { credentials: "include" }),
+      const [resResponse, notifResponse, userResponse] = await Promise.all([
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/reservations/my`, {credentials: "include" }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/me/notifications`, { credentials: "include" }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/me`, { credentials: "include" }),
       ]);
 
       if (resResponse.ok) {
@@ -49,6 +51,10 @@ export default function DashboardPage() {
       }
       if (notifResponse.ok) {
         setNotifications(await notifResponse.json());
+      }
+      if (userResponse.ok) {
+        const userData = await userResponse.json();
+        setUserRole(userData.role);
       }
     } catch (err) {
       console.error(err);
@@ -59,7 +65,7 @@ export default function DashboardPage() {
 
   const markNotificationRead = async (id: number) => {
     try {
-      await fetch(`http://localhost:8000/api/me/notifications/${id}/read`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/me/notifications/${id}/read`, {
         method: "PATCH",
         credentials: "include"
       });
@@ -71,7 +77,7 @@ export default function DashboardPage() {
 
   const cancelReservation = async (id: number) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/reservations/${id}/my-cancel`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/reservations/${id}/my-cancel`, {
         method: "PATCH",
         credentials: "include"
       });
@@ -84,7 +90,7 @@ export default function DashboardPage() {
 
   const checkinReservation = async (id: number) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/reservations/${id}/checkin`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/reservations/${id}/checkin`, {
         method: "PATCH",
         credentials: "include"
       });
@@ -108,7 +114,7 @@ export default function DashboardPage() {
       case "no_show":
         return <XCircle size={16} className="text-amber-400" />;
       default:
-        return <Clock size={16} className="text-gray-400" />;
+        return <Clock size={16} className="text-zinc-400" />;
     }
   };
 
@@ -125,7 +131,7 @@ export default function DashboardPage() {
       case "no_show":
         return "bg-amber-900/30 text-amber-300 border-amber-800";
       default:
-        return "bg-gray-900/30 text-gray-300 border-gray-800";
+        return "bg-zinc-900/30 text-zinc-300 border-zinc-800";
     }
   };
 
@@ -152,25 +158,35 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900 text-gray-400">
+      <div className="min-h-screen flex items-center justify-center bg-zinc-900 text-zinc-400">
         Loading...
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8">
+    <div className="min-h-screen bg-zinc-900 text-white p-8">
       <div className="max-w-4xl mx-auto">
 
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold text-emerald-400">My Dashboard</h1>
-          <button
-            onClick={() => router.push("/seats")}
-            className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors cursor-pointer"
-          >
-            <ArrowLeft size={18} />
-            Back to Seats
-          </button>
+          <div className="flex items-center gap-4">
+            {userRole === "admin" && (
+              <button
+                onClick={() => router.push("/admin")}
+                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg border border-emerald-500 shadow-lg transition-colors font-bold cursor-pointer"
+              >
+                Admin Panel
+              </button>
+            )}
+            <button
+              onClick={() => router.push("/seats")}
+              className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+            >
+              <ArrowLeft size={18} />
+              Back to Seats
+            </button>
+          </div>
         </div>
 
         {notifications.length > 0 && (
@@ -201,27 +217,27 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 mb-6">
+        <div className="bg-zinc-800 p-6 rounded-xl border border-zinc-700 mb-6">
           <h2 className="text-xl font-bold mb-4 text-emerald-300">Active Reservations</h2>
 
           {activeReservations.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">No active reservations</p>
+            <p className="text-zinc-500 text-center py-8">No active reservations</p>
           ) : (
             <div className="flex flex-col gap-3">
               {activeReservations.map((res) => (
                 <div
                   key={res.id}
-                  className="bg-gray-900 p-4 rounded-lg border border-gray-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                  className="bg-zinc-900 p-4 rounded-lg border border-zinc-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                 >
                   <div className="flex items-center gap-4">
-                    <span className="text-2xl font-bold text-white bg-gray-800 w-12 h-12 flex items-center justify-center rounded-lg border border-gray-600">
+                    <span className="text-2xl font-bold text-white bg-zinc-800 w-12 h-12 flex items-center justify-center rounded-lg border border-zinc-600">
                       {res.seat_id}
                     </span>
                     <div>
-                      <p className="font-bold text-gray-200">
+                      <p className="font-bold text-zinc-200">
                         Seat #{res.seat_id}
                       </p>
-                      <p className="text-gray-400 text-sm">
+                      <p className="text-zinc-400 text-sm">
                         {formatDate(res.res_start_time)} — {formatDate(res.res_end_time)}
                       </p>
                     </div>
@@ -261,23 +277,23 @@ export default function DashboardPage() {
         </div>
 
         {cancelledReservations.length > 0 && (
-          <div className="bg-gray-800/50 p-6 rounded-xl border border-gray-700/50">
-            <h2 className="text-xl font-bold mb-4 text-gray-500">Cancelled Reservations</h2>
+          <div className="bg-zinc-800/50 p-6 rounded-xl border border-zinc-700/50">
+            <h2 className="text-xl font-bold mb-4 text-zinc-500">Cancelled Reservations</h2>
             <div className="flex flex-col gap-3">
               {cancelledReservations.map((res) => (
                 <div
                   key={res.id}
-                  className="bg-gray-900/50 p-4 rounded-lg border border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 opacity-50"
+                  className="bg-zinc-900/50 p-4 rounded-lg border border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 opacity-50"
                 >
                   <div className="flex items-center gap-4">
-                    <span className="text-2xl font-bold text-gray-600 bg-gray-800 w-12 h-12 flex items-center justify-center rounded-lg border border-gray-700">
+                    <span className="text-2xl font-bold text-zinc-600 bg-zinc-800 w-12 h-12 flex items-center justify-center rounded-lg border border-zinc-700">
                       {res.seat_id}
                     </span>
                     <div>
-                      <p className="font-bold text-gray-500">
+                      <p className="font-bold text-zinc-500">
                         Seat #{res.seat_id}
                       </p>
-                      <p className="text-gray-600 text-sm">
+                      <p className="text-zinc-600 text-sm">
                         {formatDate(res.res_start_time)} — {formatDate(res.res_end_time)}
                       </p>
                     </div>
