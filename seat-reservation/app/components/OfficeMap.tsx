@@ -88,8 +88,8 @@ export default function OfficeMap({ seats, selectedSeat, onSelectSeat, selectedO
           <rect x="40" y="40" width={svgWidth - 280} height={svgHeight * 0.45} rx="15" fill="#111827" opacity="0.5" />
           <text x="60" y="70" fill="#4b5563" fontSize="20" fontWeight="bold" letterSpacing="2">OPEN SPACE</text>
 
-          <rect x="40" y={svgHeight * 0.55} width={svgWidth - 280} height={svgHeight * 0.35} rx="15" fill="#1e1b4b" opacity="0.3" />
-          <text x="60" y={svgHeight * 0.55 + 30} fill="#4c1d95" fontSize="20" fontWeight="bold" letterSpacing="2">QUIET ZONE</text>
+          <rect x="40" y={svgHeight * 0.55} width={svgWidth - 280} height={svgHeight * 0.35} rx="15" fill="#27272a" opacity="0.4" />
+          <text x="60" y={svgHeight * 0.55 + 30} fill="#71717a" fontSize="20" fontWeight="bold" letterSpacing="2">QUIET ZONE</text>
 
           <rect x={svgWidth - 220} y="40" width="180" height={svgHeight - 80} rx="15" fill="#450a0a" opacity="0.3" />
           <text x={svgWidth - 200} y="70" fill="#991b1b" fontSize="20" fontWeight="bold" letterSpacing="2" writingMode="vertical-rl">PRIVATE ROOMS</text>
@@ -113,8 +113,8 @@ export default function OfficeMap({ seats, selectedSeat, onSelectSeat, selectedO
               rectStroke = "#991b1b";
               textColor = "#fca5a5";
             } else if (isSelected) {
-              rectFill = "#2563eb"; // Blue
-              rectStroke = "#60a5fa";
+              rectFill = "#059669"; // Emerald
+              rectStroke = "#34d399";
               textColor = "#ffffff";
             } else {
               rectFill = "#1f2937"; // Available
@@ -139,7 +139,7 @@ export default function OfficeMap({ seats, selectedSeat, onSelectSeat, selectedO
                   height="60" 
                   rx="8" 
                   fill={rectFill} 
-                  stroke={isSelected ? "#60a5fa" : rectStroke} 
+                  stroke={isSelected ? "#34d399" : rectStroke} 
                   strokeWidth={isSelected ? "3" : "2"}
                   className={`transition-all duration-300 ${seat.is_active && seat.is_available && !isSelected ? "hover:fill-gray-600 hover:stroke-gray-400" : ""}`}
                 />
@@ -157,8 +157,8 @@ export default function OfficeMap({ seats, selectedSeat, onSelectSeat, selectedO
                
                 {seat.has_monitor && seat.is_active && (
                   <g transform="translate(60, -10)">
-                    <rect width="20" height="20" rx="4" fill="#0f172a" stroke="#0ea5e9" strokeWidth="1" />
-                    <svg width="12" height="12" x="4" y="4" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <rect width="20" height="20" rx="4" fill="#0f172a" stroke="#10b981" strokeWidth="1" />
+                    <svg width="12" height="12" x="4" y="4" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                       <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
                       <line x1="8" y1="21" x2="16" y2="21"></line>
                       <line x1="12" y1="17" x2="12" y2="21"></line>

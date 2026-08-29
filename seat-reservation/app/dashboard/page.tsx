@@ -104,9 +104,9 @@ export default function DashboardPage() {
       case "cancelled":
         return <XCircle size={16} className="text-red-400" />;
       case "checked_in":
-        return <CheckCircle size={16} className="text-blue-400" />;
+        return <CheckCircle size={16} className="text-teal-400" />;
       case "no_show":
-        return <XCircle size={16} className="text-purple-400" />;
+        return <XCircle size={16} className="text-amber-400" />;
       default:
         return <Clock size={16} className="text-gray-400" />;
     }
@@ -121,9 +121,9 @@ export default function DashboardPage() {
       case "cancelled":
         return "bg-red-900/30 text-red-300 border-red-800";
       case "checked_in":
-        return "bg-blue-900/30 text-blue-300 border-blue-800";
+        return "bg-teal-900/30 text-teal-300 border-teal-800";
       case "no_show":
-        return "bg-purple-900/30 text-purple-300 border-purple-800";
+        return "bg-amber-900/30 text-amber-300 border-amber-800";
       default:
         return "bg-gray-900/30 text-gray-300 border-gray-800";
     }
@@ -163,7 +163,7 @@ export default function DashboardPage() {
       <div className="max-w-4xl mx-auto">
 
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-blue-400">My Dashboard</h1>
+          <h1 className="text-3xl font-bold text-emerald-400">My Dashboard</h1>
           <button
             onClick={() => router.push("/seats")}
             className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors cursor-pointer"
@@ -202,7 +202,7 @@ export default function DashboardPage() {
         )}
 
         <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 mb-6">
-          <h2 className="text-xl font-bold mb-4 text-blue-300">Active Reservations</h2>
+          <h2 className="text-xl font-bold mb-4 text-emerald-300">Active Reservations</h2>
 
           {activeReservations.length === 0 ? (
             <p className="text-gray-500 text-center py-8">No active reservations</p>

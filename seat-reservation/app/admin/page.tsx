@@ -121,18 +121,18 @@ export default function AdminPanel() {
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6 text-blue-400">Admin Panel</h1>
+        <h1 className="text-3xl font-bold mb-6 text-emerald-400">Admin Panel</h1>
         
         <div className="flex gap-4 mb-8 border-b border-gray-700 pb-2">
           <button 
             onClick={() => setActiveTab("management")}
-            className={`px-4 py-2 font-bold transition-colors ${activeTab === "management" ? "text-blue-400 border-b-2 border-blue-400" : "text-gray-400 hover:text-gray-200"}`}
+            className={`px-4 py-2 font-bold transition-colors ${activeTab === "management" ? "text-emerald-400 border-b-2 border-emerald-400" : "text-gray-400 hover:text-gray-200"}`}
           >
             Management
           </button>
           <button 
             onClick={() => setActiveTab("analytics")}
-            className={`px-4 py-2 font-bold transition-colors ${activeTab === "analytics" ? "text-blue-400 border-b-2 border-blue-400" : "text-gray-400 hover:text-gray-200"}`}
+            className={`px-4 py-2 font-bold transition-colors ${activeTab === "analytics" ? "text-emerald-400 border-b-2 border-emerald-400" : "text-gray-400 hover:text-gray-200"}`}
           >
             Analytics
           </button>
@@ -199,7 +199,7 @@ export default function AdminPanel() {
                   <td className="py-3 text-gray-300">Seat {res.seat_id}</td>
                   <td className="py-3">
                  
-                    <span className={res.status === 'cancelled' ? "text-gray-500" : "text-blue-400"}>
+                    <span className={res.status === 'cancelled' ? "text-gray-500" : "text-emerald-400"}>
                       {res.status}
                     </span>
                   </td>
