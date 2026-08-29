@@ -37,6 +37,26 @@ A full-stack office seat reservation system with interactive floor maps, recurri
 - **Collision Detection** — Prevents double-bookings for both seats and users
 - **Email Simulation** — Console-logged email notifications for no-show events
 
+## Screenshots
+
+<details>
+<summary><b>Click to view application screenshots</b></summary>
+<br>
+
+**1. Seat Reservation Map (Grid/Map Toggle)**
+![Seat Reservation Map](docs/assets/screenshots/seats.png)
+
+**2. User Dashboard & Notifications**
+![User Dashboard](docs/assets/screenshots/dashboard.png)
+
+**3. Admin Analytics Panel**
+![Admin Analytics Panel](docs/assets/screenshots/admin.png)
+
+**4. Maintenance Scheduling (Admin)**
+![Maintenance Scheduling](docs/assets/screenshots/modal.png)
+
+</details>
+
 ## Project Structure
 
 ```
