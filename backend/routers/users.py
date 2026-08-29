@@ -90,6 +90,10 @@ def login(user_credentials: UserLogin, response: Response, db: Session = Depends
     )
     return {"message": "Login Successful"}
 
+@router.get("/me", response_model=UserResponse)
+def get_me(current_user: User = Depends(get_current_user)):
+    return current_user
+
 @router.get("/me/notifications", response_model=List[NotificationResponse])
 def get_my_notifications(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     notifications = db.query(Notification).filter(
