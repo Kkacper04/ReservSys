@@ -3,6 +3,7 @@ import toast from "react-hot-toast";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/dist/client/components/navigation";
+import { ArrowLeft } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 interface Seat {
@@ -143,7 +144,16 @@ export default function AdminPanel() {
   return (
     <div className="min-h-screen bg-zinc-900 text-white p-8">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6 text-emerald-400">Admin Panel</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold text-emerald-400">Admin Panel</h1>
+          <button
+            onClick={() => router.push("/seats")}
+            className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors cursor-pointer font-bold"
+          >
+            <ArrowLeft size={18} />
+            Back to Seats
+          </button>
+        </div>
         
         <div className="flex gap-4 mb-8 border-b border-zinc-700 pb-2">
           <button 
