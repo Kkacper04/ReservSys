@@ -185,15 +185,26 @@ Download and run [LM Studio](https://lmstudio.ai/) with any compatible model, th
 
 ## Environment Variables
 
-Create a `backend/.env` file:
+### Backend (`backend/.env`)
 
 ```env
 DATABASE_URL=postgresql://admin:admin@localhost:5432/reservation_system
-SECRET_KEY=your-secret-key-here
+# When using Docker, DATABASE_URL should point to the db container:
+# DATABASE_URL=postgresql://admin:admin@db:5432/reservation_system
+
+SECRET_KEY=your-super-secret-jwt-key
 ALGORITHM=HS256
 ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 ADMIN_PASSWORD=admin123
 LM_STUDIO_URL=http://localhost:1234/v1
+# When using Docker and LM Studio on Windows/Mac, use:
+# LM_STUDIO_URL=http://host.docker.internal:1234/v1
+```
+
+### Frontend (`seat-reservation/.env.local`)
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
 ## Testing
