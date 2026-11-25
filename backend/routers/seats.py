@@ -7,7 +7,7 @@ from api_schemas import SeatCreate, SeatOut, SeatResponse, ToggleSeatRequest
 import crud
 from database import get_db, to_utc
 from models import Notification, Reservation, ReservationStatus, Seat, User
-from routers.users import require_admin
+from routers.users import get_current_user, require_admin
 
 router = APIRouter(prefix="/api/seats", tags=["Seats"])
 
@@ -36,7 +36,12 @@ def create_seat(seat: SeatCreate, db: Session = Depends(get_db), current_user: U
 
 
 @router.get("/available", response_model=List[SeatResponse])
-def check_available_seats(start_time: datetime, end_time: datetime, db: Session = Depends(get_db)):
+def check_available_seats(
+    start_time: datetime,
+    end_time: datetime,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     start_utc = to_utc(start_time)
     end_utc = to_utc(end_time)
     if start_utc >= end_utc:

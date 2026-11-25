@@ -58,6 +58,7 @@ def create_reservation(
     else:
         dates_to_book.append((current_start, current_end))
 
+    db.query(User).filter(User.id == current_user.id).with_for_update().first()
     seat = db.query(Seat).filter(Seat.id == reservation.seat_id).with_for_update().first()
     if not seat:
         raise HTTPException(status_code=404, detail="Seat not found.")

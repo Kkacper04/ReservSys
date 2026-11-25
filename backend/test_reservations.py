@@ -16,6 +16,7 @@ from database import base, get_db
 from main import app
 import models
 from routers.users import (
+    RateLimiter,
     create_access_token,
     get_password_hash,
     login_rate_limiter,
@@ -128,12 +129,8 @@ def test_overbooking():
 
 
 def test_available_seats_and_maintenance_timezone_handling():
-    res = client.get("/api/seats/available?start_time=2030-01-01T10:00:00&end_time=2030-01-01T12:00:00")
-    assert res.status_code == 200
-    data = res.json()
-    assert len(data) == 1
-    assert data[0]["is_available"] is True
-    assert data[0]["is_active"] is True
+    unauth = client.get("/api/seats/available?start_time=2030-01-01T10:00:00&end_time=2030-01-01T12:00:00")
+    assert unauth.status_code == 401
 
     db = TestingSessionLocal()
     db.add(models.User(id=10, name="AdminUser", email="admin@test.com", password="test", role="admin"))
@@ -141,6 +138,14 @@ def test_available_seats_and_maintenance_timezone_handling():
     db.close()
 
     client.cookies.set("access_token", f"Bearer {create_access_token({'sub': '10'})}")
+
+    res = client.get("/api/seats/available?start_time=2030-01-01T10:00:00&end_time=2030-01-01T12:00:00")
+    assert res.status_code == 200
+    data = res.json()
+    assert len(data) == 1
+    assert data[0]["is_available"] is True
+    assert data[0]["is_active"] is True
+
     toggle = client.patch(
         "/api/seats/1/toggle",
         json={
@@ -375,3 +380,25 @@ def test_admin_reservation_list_and_detail_include_user_and_seat():
 
     missing_res = client.get("/api/reservations/99999")
     assert missing_res.status_code == 404
+
+
+def test_rate_limiter_prunes_stale_ip_keys_and_unknown_login_returns_401(monkeypatch):
+    from types import SimpleNamespace
+
+    limiter = RateLimiter(max_requests=5, window_seconds=10)
+    now = 100.0
+    monkeypatch.setattr("routers.users.time.monotonic", lambda: now)
+
+    limiter(SimpleNamespace(client=SimpleNamespace(host="10.0.0.1")))
+    assert "10.0.0.1" in limiter._hits
+
+    now = 115.0
+    limiter(SimpleNamespace(client=SimpleNamespace(host="10.0.0.2")))
+    assert "10.0.0.1" not in limiter._hits
+    assert list(limiter._hits.keys()) == ["10.0.0.2"]
+
+    unknown_login = client.post(
+        "/api/login",
+        json={"email": "nobody@example.com", "password": "wrongpassword"},
+    )
+    assert unknown_login.status_code == 401

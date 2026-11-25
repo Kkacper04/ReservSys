@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import {
@@ -278,21 +278,30 @@ export default function SeatsPage() {
     return null;
   }, [startTime, endTime]);
 
-  const loadSeats = async (startVal: string, endVal: string) => {
-    const startIso = new Date(startVal).toISOString();
-    const endIso = new Date(endVal).toISOString();
-    const response = await fetch(
-      `${API_URL}/api/seats/available?start_time=${encodeURIComponent(
-        startIso
-      )}&end_time=${encodeURIComponent(endIso)}`,
-      { credentials: "include" }
-    );
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      throw new Error(errorData?.detail || "Unable to load seats for this range.");
-    }
-    return (await response.json()) as OfficeMapSeat[];
-  };
+  const loadSeats = useCallback(
+    async (startVal: string, endVal: string) => {
+      const startIso = new Date(startVal).toISOString();
+      const endIso = new Date(endVal).toISOString();
+      const response = await fetch(
+        `${API_URL}/api/seats/available?start_time=${encodeURIComponent(
+          startIso
+        )}&end_time=${encodeURIComponent(endIso)}`,
+        { credentials: "include" }
+      );
+      if (response.status === 401) {
+        router.push("/login");
+        return null;
+      }
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(
+          errorData?.detail || "Unable to load seats for this range."
+        );
+      }
+      return (await response.json()) as OfficeMapSeat[];
+    },
+    [router]
+  );
 
   const applySeatsData = (data: OfficeMapSeat[]) => {
     setSeats(data);
@@ -373,7 +382,7 @@ export default function SeatsPage() {
     (async () => {
       try {
         const data = await loadSeats(startTime, endTime);
-        if (!active) return;
+        if (!active || !data) return;
         applySeatsData(data);
       } catch (err: unknown) {
         if (!active) return;
@@ -390,7 +399,7 @@ export default function SeatsPage() {
     return () => {
       active = false;
     };
-  }, [startTime, endTime, timeValidationError]);
+  }, [startTime, endTime, timeValidationError, loadSeats]);
 
   const markNotificationRead = async (id: number) => {
     try {
@@ -530,7 +539,7 @@ export default function SeatsPage() {
     setFeedback(null);
 
     try {
-      const response = await fetch(`${API_URL}/api/reservations`, {
+      const response = await fetch(`${API_URL}/api/reservations/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -570,7 +579,9 @@ export default function SeatsPage() {
         loadSeats(startTime, endTime),
         refreshAccountData(),
       ]);
-      applySeatsData(updatedSeats);
+      if (updatedSeats) {
+        applySeatsData(updatedSeats);
+      }
     } catch (err: unknown) {
       const msg =
         err instanceof Error ? err.message : "Could not complete reservation.";

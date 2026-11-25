@@ -6,7 +6,7 @@ A full-stack office desk reservation platform with an architectural floor plan v
 
 | Layer | Technology |
 |-------|-----------|
-| **Frontend** | Next.js 16 (`^16.3.0`), React 19 (`19.2.4`), TypeScript 5, Tailwind CSS 4, Recharts 3, Lucide Icons, `react-hot-toast` |
+| **Frontend** | Next.js 16 (`^16.4.6`), React 19 (`19.2.4`), TypeScript 5, Tailwind CSS 4, Recharts 3, Lucide Icons, `react-hot-toast` |
 | **Backend** | Python 3.11, FastAPI (`0.140.13`), SQLAlchemy 2.0, Alembic, Pydantic v2 (`pydantic-settings`) |
 | **Database** | PostgreSQL 15 (Docker), SQLite in-memory (Pytest suite) |
 | **Auth & Security** | PyJWT (`HttpOnly`, `SameSite=lax` cookies), `bcrypt`, sliding-window rate limiting |

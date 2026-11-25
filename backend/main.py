@@ -34,7 +34,7 @@ async def auto_cancel_no_shows():
                     user = res.user
                     seat = res.seat
                     if user and seat:
-                        print(f"\n[SIMULATED EMAIL] To: {user.email}")
+                        print(f"\n[SIMULATED EMAIL] To: user_id={res.user_id}")
                         print("Subject: Reservation Auto-Cancelled")
                         print(
                             f"Body: Your reservation for seat {seat.seat_number} was automatically "

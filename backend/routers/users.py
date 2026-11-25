@@ -36,9 +36,16 @@ class RateLimiter:
         now = time.monotonic()
         cutoff = now - self.window_seconds
         with self._lock:
+            stale_ips = []
+            for ip, hits in self._hits.items():
+                while hits and hits[0] <= cutoff:
+                    hits.popleft()
+                if not hits:
+                    stale_ips.append(ip)
+            for ip in stale_ips:
+                del self._hits[ip]
+
             bucket = self._hits[client_ip]
-            while bucket and bucket[0] <= cutoff:
-                bucket.popleft()
             if len(bucket) >= self.max_requests:
                 raise HTTPException(
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -64,6 +71,9 @@ def get_password_hash(password: str) -> str:
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
+
+
+DUMMY_PASSWORD_HASH = get_password_hash("dummy-password-for-timing")
 
 
 def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
@@ -136,7 +146,9 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
 @router.post("/login", status_code=status.HTTP_200_OK, dependencies=[Depends(login_rate_limiter)])
 def login(user_credentials: UserLogin, response: Response, db: Session = Depends(get_db)):
     user = db.query(User).filter(func.lower(User.email) == user_credentials.email).first()
-    if not user or not verify_password(user_credentials.password, user.password):
+    password_hash = user.password if user else DUMMY_PASSWORD_HASH
+    password_valid = verify_password(user_credentials.password, password_hash)
+    if not user or not password_valid:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
 
     access_token = create_access_token(data={"sub": str(user.id)})
