@@ -17,7 +17,7 @@ A full-stack office desk reservation platform with an architectural floor plan v
 
 ### For Employees
 - **Desk Reservation** — Book workstations across multiple offices (**Warsaw** and **Poznan**) with custom start/end time windows (up to 16 hours per single reservation).
-- **Grid & Interactive Floor Plan Views** — Browse desks in a filterable card grid (filter by office, availability, external monitor, and desk type) or switch to the interactive architectural SVG floor plan (`OfficeMap`) with zone grouping and status color-coding.
+- **Grid & Interactive Floor Plan Views** — Browse desks in a filterable card grid (filter by office, availability, external monitor, and desk type) featuring color-coded vertical status strips, workstation type icons/badges (`Standard`, `Booth`, `Private`), and `Monitor` vs `Laptop-ready` equipment chips—or switch to the interactive architectural CAD SVG floor plan (`OfficeMap`) with zone grouping, desks with monitor & chair silhouettes, U-shaped acoustic booths, walled private suites with door swing arcs, and aisle/corridor framing.
 - **Recurring Reservations** — Schedule `daily` or `weekly` recurring bookings (up to 30 occurrences) with atomic all-or-nothing collision validation.
 - **Check-in Window** — Check in from **15 minutes before** until **15 minutes after** reservation start time.
 - **Personal Dashboard** — Track active bookings and reservation history, check in on arrival, cancel upcoming reservations, and read account notifications.
@@ -42,9 +42,13 @@ A full-stack office desk reservation platform with an architectural floor plan v
 ![Sign In](docs/assets/screenshots/login.png)
 
 ### 2. Desk Reservation — Grid View
+Workstation tiles with left vertical status strips, workstation type icons and badges (`Standard`, `Booth`, `Private`), and `Monitor` vs `Laptop-ready` equipment chips, paired with a sticky reservation bar that clears the Help Desk button.
+
 ![Desk Reservation Grid View](docs/assets/screenshots/seats-grid.png)
 
 ### 3. Desk Reservation — Interactive Architectural Floor Plan
+Architectural CAD SVG floor plan (`OfficeMap`) rendering standard desks with monitors and ergonomic chairs, U-shaped acoustic quiet booths, walled private suites with inward door swing arcs, `WALKWAY · AISLE` row dividers, `MAIN CORRIDOR` framing, `MAIN ENTRANCE`, and a `PLAN · CAD` compass.
+
 ![Interactive Office Floor Plan](docs/assets/screenshots/seats-map.png)
 
 ### 4. Employee Dashboard & Check-In
