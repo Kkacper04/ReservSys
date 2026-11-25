@@ -11,8 +11,11 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  Clock,
+  MapPin,
   Monitor,
   Search,
+  User as UserIcon,
   Wrench,
   X,
   XCircle,
@@ -42,6 +45,23 @@ interface Seat {
   is_active: boolean;
 }
 
+interface ReservationUser {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+}
+
+interface ReservationSeat {
+  id: number;
+  seat_number: string;
+  zone: string;
+  desk_type: string;
+  office_name: string;
+  has_monitor: boolean;
+  is_active: boolean;
+}
+
 interface Reservation {
   id: number;
   user_id: number;
@@ -49,6 +69,8 @@ interface Reservation {
   res_start_time: string;
   res_end_time: string;
   status: string;
+  user?: ReservationUser | null;
+  seat?: ReservationSeat | null;
 }
 
 interface PopularSeatStat {
@@ -100,6 +122,35 @@ function formatDateTime(value: string): string {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function formatFullDateTime(value: string): string {
+  const date = parseApiDate(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString("en-GB", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function formatDuration(startValue: string, endValue: string): string {
+  const start = parseApiDate(startValue);
+  const end = parseApiDate(endValue);
+  const diffMs = end.getTime() - start.getTime();
+  if (Number.isNaN(diffMs) || diffMs <= 0) return "—";
+  const totalMinutes = Math.round(diffMs / 60000);
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const minutes = totalMinutes % 60;
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days}d`);
+  if (hours > 0 || days > 0) parts.push(`${hours}h`);
+  parts.push(`${String(minutes).padStart(2, "0")}m`);
+  return parts.join(" ");
 }
 
 async function extractErrorMessage(res: Response, fallback: string): Promise<string> {
@@ -161,6 +212,9 @@ export default function AdminPanel() {
   const [resSearch, setResSearch] = useState("");
   const [busyResId, setBusyResId] = useState<number | null>(null);
   const [confirmCancelId, setConfirmCancelId] = useState<number | null>(null);
+  const [selectedReservation, setSelectedReservation] =
+    useState<Reservation | null>(null);
+  const [modalConfirmCancel, setModalConfirmCancel] = useState(false);
 
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
@@ -362,6 +416,8 @@ export default function AdminPanel() {
         );
       }
       setConfirmCancelId(null);
+      setModalConfirmCancel(false);
+      setSelectedReservation((prev) => (prev?.id === id ? null : prev));
       toast.success(`Reservation #${id} cancelled and user notified`);
       fetchReservations(page);
       if (analytics) fetchAnalytics();
@@ -473,6 +529,22 @@ export default function AdminPanel() {
     });
   }, [seats, seatSearch, seatStatusFilter]);
 
+  const closeReservationModal = useCallback(() => {
+    setSelectedReservation(null);
+    setModalConfirmCancel(false);
+  }, []);
+
+  useEffect(() => {
+    if (!selectedReservation) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closeReservationModal();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedReservation, closeReservationModal]);
+
   const filteredReservations = useMemo(() => {
     const query = resSearch.trim().toLowerCase();
     return reservations.filter((res) => {
@@ -480,15 +552,19 @@ export default function AdminPanel() {
         return false;
       }
       if (!query) return true;
-      const seat = seatLookup[res.seat_id];
+      const seat = res.seat ?? seatLookup[res.seat_id];
       const seatLabel = seat
-        ? `${seat.seat_number} ${seat.office_name}`.toLowerCase()
+        ? `${seat.seat_number} ${seat.office_name} ${seat.zone}`.toLowerCase()
+        : "";
+      const userLabel = res.user
+        ? `${res.user.name} ${res.user.email}`.toLowerCase()
         : "";
       return (
         String(res.id).includes(query) ||
         String(res.user_id).includes(query) ||
         String(res.seat_id).includes(query) ||
-        seatLabel.includes(query)
+        seatLabel.includes(query) ||
+        userLabel.includes(query)
       );
     });
   }, [reservations, resStatusFilter, resSearch, seatLookup]);
@@ -830,7 +906,7 @@ export default function AdminPanel() {
                 </thead>
                 <tbody className="divide-y divide-[#E4E2DC] text-sm">
                   {filteredReservations.map((res) => {
-                    const seat = seatLookup[res.seat_id];
+                    const seat = res.seat ?? seatLookup[res.seat_id];
                     const badgeClass =
                       STATUS_BADGE_MAP[res.status] ||
                       "bg-[#F1EFE9] text-[#6B6A65] border-[#DDD9CE]";
@@ -842,13 +918,39 @@ export default function AdminPanel() {
                     return (
                       <tr
                         key={res.id}
-                        className="hover:bg-[#F7F6F2]/50 transition-colors"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => {
+                          setModalConfirmCancel(false);
+                          setSelectedReservation(res);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setModalConfirmCancel(false);
+                            setSelectedReservation(res);
+                          }
+                        }}
+                        className="hover:bg-[#F7F6F2]/70 transition-colors cursor-pointer focus-visible:outline-none focus-visible:bg-[#F7F6F2]"
                       >
                         <td className="py-3.5 px-5 font-mono font-semibold text-[#161615] tabular-nums">
                           #{res.id}
                         </td>
-                        <td className="py-3.5 px-5 text-[#161615] tabular-nums">
-                          User #{res.user_id}
+                        <td className="py-3.5 px-5">
+                          {res.user ? (
+                            <div>
+                              <p className="font-medium text-[#161615] leading-snug">
+                                {res.user.name}
+                              </p>
+                              <p className="text-xs text-[#6B6A65] truncate max-w-[220px]">
+                                {res.user.email}
+                              </p>
+                            </div>
+                          ) : (
+                            <span className="text-[#161615] tabular-nums">
+                              User #{res.user_id}
+                            </span>
+                          )}
                         </td>
                         <td className="py-3.5 px-5">
                           {seat ? (
@@ -878,10 +980,17 @@ export default function AdminPanel() {
                         <td className="py-3.5 px-5 text-right">
                           {canCancel ? (
                             isConfirming ? (
-                              <div className="inline-flex items-center gap-1.5 bg-[#FDF1F0] border border-[#EFC8C4] rounded-lg px-2 py-1">
+                              <div
+                                onClick={(e) => e.stopPropagation()}
+                                onKeyDown={(e) => e.stopPropagation()}
+                                className="inline-flex items-center gap-1.5 bg-[#FDF1F0] border border-[#EFC8C4] rounded-lg px-2 py-1"
+                              >
                                 <button
                                   type="button"
-                                  onClick={() => cancelReservation(res.id)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    cancelReservation(res.id);
+                                  }}
                                   disabled={isBusy}
                                   className="px-2 py-0.5 rounded text-xs font-semibold bg-[#9E2A2B] text-white hover:bg-[#7F2021] cursor-pointer disabled:opacity-50"
                                 >
@@ -889,7 +998,10 @@ export default function AdminPanel() {
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => setConfirmCancelId(null)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setConfirmCancelId(null);
+                                  }}
                                   disabled={isBusy}
                                   className="px-1.5 py-0.5 text-xs text-[#6B6A65] hover:text-[#161615] cursor-pointer"
                                 >
@@ -899,7 +1011,11 @@ export default function AdminPanel() {
                             ) : (
                               <button
                                 type="button"
-                                onClick={() => setConfirmCancelId(res.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setConfirmCancelId(res.id);
+                                }}
+                                onKeyDown={(e) => e.stopPropagation()}
                                 disabled={isBusy}
                                 className="rs-btn-danger"
                               >
@@ -1286,6 +1402,214 @@ export default function AdminPanel() {
           </div>
         </div>
       )}
+
+      {selectedReservation !== null && (() => {
+        const modalSeat =
+          selectedReservation.seat ?? seatLookup[selectedReservation.seat_id];
+        const modalBadgeClass =
+          STATUS_BADGE_MAP[selectedReservation.status] ||
+          "bg-[#F1EFE9] text-[#6B6A65] border-[#DDD9CE]";
+        const canCancelModal =
+          selectedReservation.status !== "cancelled" &&
+          selectedReservation.status !== "no_show";
+        const isModalBusy = busyResId === selectedReservation.id;
+        const durationLabel = formatDuration(
+          selectedReservation.res_start_time,
+          selectedReservation.res_end_time
+        );
+
+        return (
+          <div
+            className="fixed inset-0 bg-[#161615]/40 backdrop-blur-[2px] flex items-center justify-center p-4 z-50"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="reservation-modal-title"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                closeReservationModal();
+              }
+            }}
+          >
+            <div className="bg-white border border-[#E4E2DC] rounded-xl w-full max-w-lg p-6 shadow-xl">
+              <div className="flex items-start justify-between gap-4 mb-5">
+                <div>
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <h2
+                      id="reservation-modal-title"
+                      className="text-lg font-semibold text-[#161615]"
+                    >
+                      Reservation{" "}
+                      <span className="font-mono tabular-nums">
+                        #{selectedReservation.id}
+                      </span>
+                    </h2>
+                    <span className={`rs-badge ${modalBadgeClass}`}>
+                      {selectedReservation.status.replace(/_/g, " ")}
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#6B6A65] mt-0.5">
+                    Reservation details and workstation assignment
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeReservationModal}
+                  className="p-1.5 rounded-md text-[#6B6A65] hover:text-[#161615] hover:bg-[#F1EFE9] cursor-pointer"
+                  aria-label="Close modal"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="space-y-3.5">
+                <div className="rounded-lg bg-[#F7F6F2] border border-[#E4E2DC] p-4">
+                  <div className="flex items-center justify-between gap-2 mb-2.5">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#6B6A65]">
+                      <UserIcon size={13} />
+                      Booked by
+                    </span>
+                    <span className="font-mono text-xs text-[#6B6A65] tabular-nums">
+                      User #{selectedReservation.user?.id ?? selectedReservation.user_id}
+                    </span>
+                  </div>
+                  {selectedReservation.user ? (
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-[#161615] truncate">
+                          {selectedReservation.user.name}
+                        </p>
+                        <p className="text-xs text-[#6B6A65] mt-0.5 truncate">
+                          {selectedReservation.user.email}
+                        </p>
+                      </div>
+                      <span className="shrink-0 px-2 py-0.5 rounded text-xs font-medium capitalize bg-white border border-[#E4E2DC] text-[#161615]">
+                        {selectedReservation.user.role}
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-[#6B6A65]">
+                      User profile unavailable (ID #{selectedReservation.user_id})
+                    </p>
+                  )}
+                </div>
+
+                <div className="rounded-lg bg-[#F7F6F2] border border-[#E4E2DC] p-4">
+                  <div className="flex items-center justify-between gap-2 mb-2.5">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#6B6A65]">
+                      <Clock size={13} />
+                      Reservation window
+                    </span>
+                    <span className="font-mono text-xs font-medium px-2 py-0.5 rounded bg-white border border-[#E4E2DC] text-[#161615] tabular-nums">
+                      {durationLabel}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div className="bg-white border border-[#E4E2DC] rounded-md px-3 py-2">
+                      <p className="text-[11px] font-medium uppercase tracking-wider text-[#6B6A65]">
+                        From
+                      </p>
+                      <p className="mt-1 text-sm font-medium text-[#161615] tabular-nums">
+                        {formatFullDateTime(selectedReservation.res_start_time)}
+                      </p>
+                    </div>
+                    <div className="bg-white border border-[#E4E2DC] rounded-md px-3 py-2">
+                      <p className="text-[11px] font-medium uppercase tracking-wider text-[#6B6A65]">
+                        To
+                      </p>
+                      <p className="mt-1 text-sm font-medium text-[#161615] tabular-nums">
+                        {formatFullDateTime(selectedReservation.res_end_time)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-lg bg-[#F7F6F2] border border-[#E4E2DC] p-4">
+                  <div className="flex items-center justify-between gap-2 mb-2.5">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#6B6A65]">
+                      <MapPin size={13} />
+                      Workstation
+                    </span>
+                    <span className="font-mono text-xs text-[#6B6A65] tabular-nums">
+                      Seat #{selectedReservation.seat_id}
+                    </span>
+                  </div>
+                  {modalSeat ? (
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-[#161615]">
+                          <span className="font-mono tabular-nums">
+                            {modalSeat.seat_number}
+                          </span>
+                          <span className="text-[#6B6A65] font-normal mx-1.5">
+                            ·
+                          </span>
+                          <span>{modalSeat.office_name}</span>
+                        </p>
+                        <p className="text-xs text-[#6B6A65] mt-0.5 capitalize">
+                          {modalSeat.zone} · {modalSeat.desk_type}
+                        </p>
+                      </div>
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-white border border-[#E4E2DC] text-[#161615]">
+                        <Monitor size={12} />
+                        {modalSeat.has_monitor ? "Monitor included" : "No monitor"}
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-[#6B6A65]">
+                      Workstation details unavailable (Seat #{selectedReservation.seat_id})
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 mt-6 pt-4 border-t border-[#E4E2DC]">
+                <div>
+                  {canCancelModal &&
+                    (modalConfirmCancel ? (
+                      <div className="inline-flex items-center gap-2 bg-[#FDF1F0] border border-[#EFC8C4] rounded-lg px-2.5 py-1.5">
+                        <button
+                          type="button"
+                          onClick={() => cancelReservation(selectedReservation.id)}
+                          disabled={isModalBusy}
+                          className="px-2.5 py-1 rounded text-xs font-semibold bg-[#9E2A2B] text-white hover:bg-[#7F2021] cursor-pointer disabled:opacity-50"
+                        >
+                          {isModalBusy ? "Cancelling..." : "Confirm Cancel"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setModalConfirmCancel(false)}
+                          disabled={isModalBusy}
+                          className="px-2 py-1 text-xs text-[#6B6A65] hover:text-[#161615] cursor-pointer"
+                        >
+                          Keep
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setModalConfirmCancel(true)}
+                        disabled={isModalBusy}
+                        className="rs-btn-danger"
+                      >
+                        <XCircle size={14} />
+                        Cancel Reservation
+                      </button>
+                    ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={closeReservationModal}
+                  disabled={isModalBusy}
+                  className="rs-btn-secondary"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </AppShell>
   );
 }

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from api_schemas import ReservationCreate, ReservationStatus as SchemaReservationStatus
+from api_schemas import AdminReservationResponse, ReservationCreate, ReservationStatus as SchemaReservationStatus
 import crud
 from database import get_db, to_utc
 from models import Notification, Reservation, ReservationStatus as ModelReservationStatus, Seat, User
@@ -93,7 +93,7 @@ def create_reservation(
         raise HTTPException(status_code=400, detail="Database error.")
 
 
-@router.get("/", response_model=List[SchemaReservationStatus])
+@router.get("/", response_model=List[AdminReservationResponse])
 def read_reservations(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
@@ -143,6 +143,18 @@ def get_my_reservations(
         .limit(limit)
         .all()
     )
+
+
+@router.get("/{reservation_id}", response_model=AdminReservationResponse)
+def read_reservation_by_id(
+    reservation_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    reservation = crud.get_reservation_by_id(db=db, reservation_id=reservation_id)
+    if not reservation:
+        raise HTTPException(status_code=404, detail="Reservation not found")
+    return reservation
 
 
 @router.patch("/{reservation_id}/my-cancel", status_code=200)

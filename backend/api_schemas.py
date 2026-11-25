@@ -72,6 +72,19 @@ class SeatOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class ReservationUserOut(BaseModel):
+    id: int
+    name: str
+    email: str
+    role: str
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AdminReservationResponse(ReservationStatus):
+    user: ReservationUserOut | None = None
+    seat: SeatOut | None = None
+
+
 class ToggleSeatRequest(BaseModel):
     maintenance_start: datetime | None = None
     maintenance_end: datetime | None = None

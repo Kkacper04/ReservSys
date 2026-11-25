@@ -321,3 +321,57 @@ def test_checkin_and_cancel_state_transitions():
 
     cancel_checked_in = client.patch("/api/reservations/100/my-cancel")
     assert cancel_checked_in.status_code == 400
+
+
+def test_admin_reservation_list_and_detail_include_user_and_seat():
+    db = TestingSessionLocal()
+    db.add(models.User(id=50, name="Admin50", email="admin50@test.com", password="x", role="admin"))
+    db.add(models.User(id=51, name="Alice Employee", email="alice51@test.com", password="x", role="employee"))
+    res_obj = models.Reservation(
+        id=200,
+        user_id=51,
+        seat_id=1,
+        res_start_time=datetime(2030, 3, 1, 9, 0, tzinfo=timezone.utc),
+        res_end_time=datetime(2030, 3, 1, 11, 30, tzinfo=timezone.utc),
+        status=models.ReservationStatus.CONFIRMED,
+    )
+    db.add(res_obj)
+    db.commit()
+    db.close()
+
+    client.cookies.set("access_token", f"Bearer {create_access_token({'sub': '51'})}")
+    assert client.get("/api/reservations/200").status_code == 403
+
+    client.cookies.set("access_token", f"Bearer {create_access_token({'sub': '50'})}")
+    list_res = client.get("/api/reservations/")
+    assert list_res.status_code == 200
+    items = list_res.json()
+    assert len(items) == 1
+    assert items[0]["id"] == 200
+    assert items[0]["user"] == {
+        "id": 51,
+        "name": "Alice Employee",
+        "email": "alice51@test.com",
+        "role": "employee",
+    }
+    assert items[0]["seat"] == {
+        "id": 1,
+        "seat_number": "A1",
+        "zone": "Open Space",
+        "desk_type": "standard",
+        "office_name": "Warsaw",
+        "has_monitor": True,
+        "is_active": True,
+    }
+
+    detail_res = client.get("/api/reservations/200")
+    assert detail_res.status_code == 200
+    detail = detail_res.json()
+    assert detail["id"] == 200
+    assert detail["user"]["name"] == "Alice Employee"
+    assert detail["user"]["email"] == "alice51@test.com"
+    assert detail["seat"]["seat_number"] == "A1"
+    assert detail["seat"]["office_name"] == "Warsaw"
+
+    missing_res = client.get("/api/reservations/99999")
+    assert missing_res.status_code == 404

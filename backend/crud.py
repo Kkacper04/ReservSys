@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from database import to_utc
 from models import Reservation
 import api_schemas
@@ -28,7 +28,23 @@ def create_reservation(db: Session, reservation: api_schemas.ReservationCreate, 
 
 
 def get_reservation(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(Reservation).order_by(Reservation.id.desc()).offset(skip).limit(limit).all()
+    return (
+        db.query(Reservation)
+        .options(joinedload(Reservation.user), joinedload(Reservation.seat))
+        .order_by(Reservation.id.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
+def get_reservation_by_id(db: Session, reservation_id: int):
+    return (
+        db.query(Reservation)
+        .options(joinedload(Reservation.user), joinedload(Reservation.seat))
+        .filter(Reservation.id == reservation_id)
+        .first()
+    )
 
 
 def update_reservation_status(db: Session, reservation_id: int, new_status: models.ReservationStatus):
