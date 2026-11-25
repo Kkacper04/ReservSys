@@ -1,241 +1,277 @@
 # ReservSys
 
-A full-stack office seat reservation system with interactive floor maps, recurring bookings, check-in validation, admin analytics, and a RAG-powered knowledge base assistant.
+A full-stack office desk reservation platform with an architectural floor plan viewer, recurring bookings, check-in enforcement, admin maintenance scheduling, analytics dashboards, and a RAG-powered office help desk assistant.
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| **Frontend** | Next.js 15, React 19, TypeScript, Tailwind CSS, Recharts, Lucide Icons |
-| **Backend** | Python 3.11, FastAPI, SQLAlchemy 2.0, Alembic, Pydantic |
-| **Database** | PostgreSQL 15 (via Docker), SQLite (for testing) |
-| **Auth** | JWT (HttpOnly cookies), bcrypt |
-| **AI / RAG** | LangChain, ChromaDB, HuggingFace Embeddings, LM Studio |
+| **Frontend** | Next.js 16 (`^16.3.0`), React 19 (`19.2.4`), TypeScript 5, Tailwind CSS 4, Recharts 3, Lucide Icons, `react-hot-toast` |
+| **Backend** | Python 3.11, FastAPI (`0.140.13`), SQLAlchemy 2.0, Alembic, Pydantic v2 (`pydantic-settings`) |
+| **Database** | PostgreSQL 15 (Docker), SQLite in-memory (Pytest suite) |
+| **Auth & Security** | PyJWT (`HttpOnly`, `SameSite=lax` cookies), `bcrypt`, sliding-window rate limiting |
+| **AI / RAG** | LangChain, ChromaDB, HuggingFace Embeddings (`all-MiniLM-L6-v2`), LM Studio (OpenAI-compatible endpoint) |
 | **DevOps** | Docker, Docker Compose |
 
 ## Features
 
 ### For Employees
-- **Seat Reservation** — Book desks across multiple offices (Warsaw, Poznan) with time range selection
-- **Interactive Office Map** — SVG-based visual floor plan with real-time seat availability (Grid/Map toggle)
-- **Recurring Reservations** — Schedule daily or weekly recurring bookings with a single action
-- **Check-in System** — 15-minute check-in window before and after reservation start time
-- **Dashboard** — View, manage, and cancel your reservations with status tracking
-- **Notifications** — Real-time alerts for admin cancellations and no-show auto-cancellations
-- **Office Help Desk** — RAG-powered chat assistant answering questions from office documentation
+- **Desk Reservation** — Book workstations across multiple offices (**Warsaw** and **Poznan**) with custom start/end time windows (up to 16 hours per single reservation).
+- **Grid & Interactive Floor Plan Views** — Browse desks in a filterable card grid (filter by office, availability, external monitor, and desk type) or switch to the interactive architectural SVG floor plan (`OfficeMap`) with zone grouping and status color-coding.
+- **Recurring Reservations** — Schedule `daily` or `weekly` recurring bookings (up to 30 occurrences) with atomic all-or-nothing collision validation.
+- **Check-in Window** — Check in from **15 minutes before** until **15 minutes after** reservation start time.
+- **Personal Dashboard** — Track active bookings and reservation history, check in on arrival, cancel upcoming reservations, and read account notifications.
+- **Notifications** — Receive in-app alerts when an administrator cancels a booking, schedules maintenance over an existing reservation, or when a reservation is auto-cancelled as a no-show.
+- **Office Help Desk** — Floating RAG chat assistant grounded in office documentation (`backend/docs/office_rules.txt` and `backend/docs/it_helpdesk.txt`).
 
 ### For Administrators
-- **Desk Management** — Toggle desks as active/out-of-service
-- **Reservation Management** — View and cancel any reservation (with automatic user notification)
-- **Analytics Dashboard** — Interactive charts showing:
-  - Reservation status breakdown (Pie chart)
-  - Most popular seats (Bar chart)
+- **Desk Management** — Filter and search desks, create new workstations, toggle active/inactive status, and schedule maintenance windows (which automatically cancel overlapping reservations and notify affected employees).
+- **Reservation Management** — Inspect paginated reservations across all users and cancel bookings with automatic user notification.
+- **Analytics Dashboard** — Interactive Recharts charts displaying:
+  - Reservation status breakdown (Donut chart)
+  - Most popular desks (Bar chart)
   - Zone occupancy by office (Bar chart)
 
 ### System
-- **Auto-cancellation** — Background task automatically marks no-shows after the 15-minute check-in window
-- **Collision Detection** — Prevents double-bookings for both seats and users
-- **Email Simulation** — Console-logged email notifications for no-show events
+- **No-Show Auto-Cancellation** — Background `asyncio` task runs every 60 seconds to mark un-checked-in bookings past the 15-minute window as `no_show`, issue in-app notifications, and log simulated email notices.
+- **Concurrency-Safe Collision Detection** — Prevents seat and user double-bookings using `SELECT ... FOR UPDATE` row locking and UTC-normalized intervals.
 
 ## Screenshots
 
-<details>
-<summary><b>Click to view application screenshots</b></summary>
-<br>
+### 1. Sign In (Split Architectural Layout)
+![Sign In](docs/assets/screenshots/login.png)
 
-**1. Seat Reservation Map (Grid/Map Toggle)**
-![Seat Reservation Map](docs/assets/screenshots/seats.png)
+### 2. Desk Reservation — Grid View
+![Desk Reservation Grid View](docs/assets/screenshots/seats-grid.png)
 
-**2. User Dashboard & Notifications**
-![User Dashboard](docs/assets/screenshots/dashboard.png)
+### 3. Desk Reservation — Interactive Architectural Floor Plan
+![Interactive Office Floor Plan](docs/assets/screenshots/seats-map.png)
 
-**3. Admin Analytics Panel**
-![Admin Analytics Panel](docs/assets/screenshots/admin.png)
+### 4. Employee Dashboard & Check-In
+![Employee Dashboard](docs/assets/screenshots/dashboard.png)
 
-**4. Maintenance Scheduling (Admin)**
-![Maintenance Scheduling](docs/assets/screenshots/modal.png)
+### 5. Admin Panel — Desk Management
+![Admin Desk Management](docs/assets/screenshots/admin-management.png)
 
-</details>
+### 6. Admin Panel — Maintenance Scheduling Modal
+![Admin Maintenance Scheduling Modal](docs/assets/screenshots/admin-maintenance-modal.png)
+
+### 7. Admin Panel — Usage & Occupancy Analytics
+![Admin Analytics Dashboard](docs/assets/screenshots/admin-analytics.png)
 
 ## Project Structure
 
-```
+```text
 ReservSys/
-├── docker-compose.yml
+├── .env.example                     # Environment variable template
+├── docker-compose.yml               # PostgreSQL 15, FastAPI backend, Next.js frontend
+├── README.md
+├── docs/
+│   └── assets/
+│       └── screenshots/             # UI showcase screenshots
+│
 ├── backend/
-│   ├── main.py                  # FastAPI app, CORS, background tasks
-│   ├── models.py                # SQLAlchemy models (User, Seat, Reservation, Notification)
-│   ├── database.py              # Database engine and session
-│   ├── config.py                # Pydantic settings (.env loader)
-│   ├── crud.py                  # Database operations and collision checks
-│   ├── api_schemas.py           # Pydantic request/response schemas
-│   ├── rag.py                   # RAG pipeline (LangChain + ChromaDB)
-│   ├── seed.py                  # Database seeder (seats + admin account)
+│   ├── main.py                      # FastAPI app, CORS, lifespan & no-show background task
+│   ├── config.py                    # Pydantic settings & strict SECRET_KEY validation
+│   ├── database.py                  # SQLAlchemy engine, session dependency & to_utc() helper
+│   ├── models.py                    # User, Seat, Reservation, Notification models
+│   ├── api_schemas.py               # Pydantic request/response schemas & validators
+│   ├── crud.py                      # Availability queries & collision checks
+│   ├── rag.py                       # LangChain + ChromaDB + LM Studio RAG pipeline
+│   ├── seed.py                      # Idempotent seeder (Warsaw & Poznan seats + admin user)
+│   ├── entrypoint.sh                # Container entrypoint (runs seed.py then uvicorn)
 │   ├── Dockerfile
-│   ├── alembic/                 # Database migrations
+│   ├── requirements.txt
+│   ├── alembic/                     # Database migrations
 │   ├── routers/
-│   │   ├── users.py             # Auth (register, login, logout, JWT)
-│   │   ├── seats.py             # Seat CRUD and availability
-│   │   ├── reservations.py      # Booking, cancellation, check-in
-│   │   ├── admin.py             # Analytics endpoints
-│   │   └── chat.py              # RAG chat endpoint
-│   ├── docs/                    # Office documents for RAG
+│   │   ├── users.py                 # Register, login, logout, /api/me, notifications, rate limiters
+│   │   ├── seats.py                 # Seat creation, availability search, maintenance toggle
+│   │   ├── reservations.py          # Booking (single/recurring), listing, cancel, check-in
+│   │   ├── admin.py                 # Analytics aggregations
+│   │   └── chat.py                  # Rate-limited RAG chat endpoint
+│   ├── docs/                        # Knowledge base source documents
 │   │   ├── it_helpdesk.txt
 │   │   └── office_rules.txt
-│   └── test_reservations.py     # Pytest test suite
+│   └── test_reservations.py         # Pytest suite (7 tests, in-memory SQLite)
 │
-└── seat-reservation/            # Next.js frontend
+└── seat-reservation/                # Next.js 16 App Router frontend
     ├── Dockerfile
-    ├── app/
-    │   ├── page.tsx             # Root redirect
-    │   ├── layout.tsx           # App layout
-    │   ├── login/page.tsx       # Login page
-    │   ├── register/page.tsx    # Registration page
-    │   ├── seats/page.tsx       # Seat reservation (Grid + Map views)
-    │   ├── dashboard/page.tsx   # User dashboard
-    │   ├── admin/page.tsx       # Admin panel + analytics
-    │   └── components/
-    │       ├── OfficeMap.tsx     # Interactive SVG floor plan
-    │       └── HelpDeskChat.tsx # RAG chat widget
-    └── package.json
+    ├── package.json
+    ├── next.config.ts
+    ├── tsconfig.json
+    └── app/
+        ├── page.tsx                 # Root redirect (/login)
+        ├── layout.tsx               # Fonts, metadata, toast provider
+        ├── globals.css              # Design tokens & utility classes
+        ├── login/page.tsx           # Sign-in page
+        ├── register/page.tsx        # Registration page
+        ├── seats/page.tsx           # Desk reservation (Grid + Floor Plan views)
+        ├── dashboard/page.tsx       # Employee dashboard & notifications
+        ├── admin/page.tsx           # Admin desk management, maintenance modal & analytics
+        └── components/
+            ├── AppShell.tsx         # Shared responsive header, navigation, user badge & logout
+            ├── OfficeMap.tsx        # Interactive SVG office floor plan
+            └── HelpDeskChat.tsx     # Floating Office Help Desk RAG widget
 ```
 
 ## Getting Started
 
 ### Prerequisites
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) (recommended)
-- Or: Python 3.11+, Node.js 18+, PostgreSQL 15+
+- Or for local development: Python 3.11+, Node.js 20+, PostgreSQL 15+
 
-### Option 1: Docker (Recommended)
+### Option 1: Docker Compose (Recommended)
 
-```bash
-git clone https://github.com/Kkacper04/ReservSys.git
-cd ReservSys
-docker-compose up --build
-```
+1. **Clone the repository and create your `.env` file:**
+   ```bash
+   git clone https://github.com/Kkacper04/ReservSys.git
+   cd ReservSys
+   cp .env.example .env
+   ```
 
-This starts:
-- **PostgreSQL** on port `5432`
-- **Backend (FastAPI)** on port `8000`
-- **Frontend (Next.js)** on port `3000`
+2. **Configure required secrets in `.env`:**
+   - Set `SECRET_KEY` to a random string of at least 32 characters (for example: `python -c "import secrets; print(secrets.token_hex(32))"`).
+   - Set strong passwords for `POSTGRES_PASSWORD`, `DATABASE_URL`, and `ADMIN_PASSWORD`.
 
-After startup, seed the database:
-```bash
-docker exec -it reservsys_backend python seed.py
-```
+3. **Build and start all services:**
+   ```bash
+   docker compose up --build
+   ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+   This starts:
+   - **PostgreSQL 15** (`reservsys_db`) on host port `5433` (container port `5432`)
+   - **Backend (FastAPI)** (`reservsys_backend`) on `http://localhost:8000` (runs `python seed.py` automatically on startup via `entrypoint.sh`)
+   - **Frontend (Next.js)** (`reservsys_frontend`) on `http://localhost:3000`
+
+   Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ### Option 2: Local Development
 
-**1. Start the database:**
-```bash
-docker-compose up db
-```
+1. **Start PostgreSQL (via Docker):**
+   ```bash
+   cp .env.example .env
+   # Edit .env with a 32+ char SECRET_KEY and your chosen passwords
+   docker compose up -d db
+   ```
 
-**2. Backend:**
-```bash
-cd backend
-python -m venv .venv
-.venv\Scripts\activate        # Windows
-# source .venv/bin/activate   # macOS/Linux
+2. **Start the Backend:**
+   Note: When running the backend directly on your host against the Dockerized `db` service, configure `backend/.env` with host port `5433` (e.g. `postgresql://<user>:<password>@localhost:5433/<db>`), along with `SECRET_KEY` and `ADMIN_PASSWORD`.
+   ```bash
+   cd backend
+   python -m venv .venv
+   .venv\Scripts\activate        # Windows
+   # source .venv/bin/activate   # macOS/Linux
 
-pip install -r requirements.txt
-python seed.py
-uvicorn main:app --reload
-```
+   pip install -r requirements.txt
+   python seed.py
+   uvicorn main:app --reload
+   ```
 
-**3. Frontend:**
-```bash
-cd seat-reservation
-npm install
-npm run dev
-```
+3. **Start the Frontend:**
+   ```bash
+   cd seat-reservation
+   npm install
+   npm run dev
+   ```
 
-**4. RAG Chat (optional):**
-Download and run [LM Studio](https://lmstudio.ai/) with any compatible model, then start the local server on port `1234`.
+4. **Office Help Desk RAG (Optional):**
+   Start [LM Studio](https://lmstudio.ai/) with an OpenAI-compatible local model server on port `1234`. On the first chat query, `backend/rag.py` indexes `backend/docs/*.txt` into `backend/chroma_db/`.
 
-### Default Credentials
+### Seeded Admin Account
+
+`backend/seed.py` seeds the Warsaw and Poznan desks (if the `seats` table is empty) and creates the initial administrator account:
 
 | Role | Email | Password |
 |------|-------|----------|
-| Admin | `admin@gmail.com` | Value configured in `ADMIN_PASSWORD` |
-
-## API Endpoints
-
-### Authentication
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/register` | Register a new user |
-| POST | `/api/login` | Login (sets HttpOnly cookie) |
-| POST | `/api/logout` | Logout (clears cookie) |
-
-### Seats
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/seats/available` | Get seats with availability for time range |
-| POST | `/api/seats/` | Create a new seat (admin) |
-| PATCH | `/api/seats/{id}/toggle` | Toggle seat active status (admin) |
-
-### Reservations
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/reservations/` | Create reservation (supports recurrence) |
-| GET | `/api/reservations/` | List all reservations (admin) |
-| GET | `/api/reservations/my` | List current user's reservations |
-| DELETE | `/api/reservations/{id}/cancel` | Cancel reservation (admin) |
-| PATCH | `/api/reservations/{id}/my-cancel` | Cancel own reservation |
-| PATCH | `/api/reservations/{id}/checkin` | Check in to reservation |
-
-### Admin
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/admin/analytics` | Get analytics data (admin) |
-
-### Chat
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/chat/` | Ask the office knowledge base |
-
-### Notifications
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/me/notifications` | Get unread notifications |
-| PATCH | `/api/me/notifications/{id}/read` | Mark notification as read |
+| `admin` | `admin@gmail.com` | Value configured in `ADMIN_PASSWORD` |
 
 ## Environment Variables
 
-### Backend (`backend/.env`)
+See [`.env.example`](.env.example) for the full template used by `docker-compose.yml`:
 
-```env
-DATABASE_URL=postgresql://<user>:<password>@localhost:5432/reservation_system
-# When using Docker, DATABASE_URL should point to the db container:
-# DATABASE_URL=postgresql://<user>:<password>@db:5432/reservation_system
+| Variable | Description | Default / Example |
+|----------|-------------|-------------------|
+| `POSTGRES_USER` | PostgreSQL username | `admin` |
+| `POSTGRES_PASSWORD` | PostgreSQL password (required) | Set a strong password |
+| `POSTGRES_DB` | PostgreSQL database name | `reservation_system` |
+| `DATABASE_URL` | SQLAlchemy connection string (required) | `postgresql://<user>:<password>@db:5432/reservation_system` |
+| `SECRET_KEY` | JWT signing key (required, min 32 chars, no placeholder) | 32+ byte hex string |
+| `ALGORITHM` | JWT algorithm (`HS256`, `HS384`, or `HS512`) | `HS256` |
+| `ALLOWED_ORIGINS` | Comma-separated CORS origins (wildcards ignored) | `http://localhost:3000,http://127.0.0.1:3000` |
+| `COOKIE_SECURE` | Set `Secure` flag on auth cookie (`true` in HTTPS prod) | `false` |
+| `ADMIN_PASSWORD` | Password for seeded admin user (required by `seed.py`) | Set a strong password |
+| `LM_STUDIO_URL` | OpenAI-compatible LLM base URL for Help Desk RAG | `http://host.docker.internal:1234/v1` |
+| `NEXT_PUBLIC_API_URL` | Backend base URL used by the Next.js frontend | `http://localhost:8000` |
 
-SECRET_KEY=<REDACTED>
-ALGORITHM=HS256
-ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
-ADMIN_PASSWORD=<REDACTED>
-LM_STUDIO_URL=http://localhost:1234/v1
-# When using Docker and LM Studio on Windows/Mac, use:
-# LM_STUDIO_URL=http://host.docker.internal:1234/v1
-```
+## API Endpoints
 
-### Frontend (`seat-reservation/.env.local`)
+### Health
+| Method | Endpoint | Access | Description |
+|--------|----------|--------|-------------|
+| GET | `/` | Public | API health check |
 
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8000
-```
+### Authentication & User Profile
+| Method | Endpoint | Access | Description |
+|--------|----------|--------|-------------|
+| POST | `/api/register` | Public (10 req/min) | Register an employee account (normalizes email, validates password ≤72 bytes) |
+| POST | `/api/login` | Public (20 req/min) | Authenticate and set `HttpOnly`, `SameSite=lax` JWT cookie |
+| POST | `/api/logout` | Public | Clear the `access_token` cookie |
+| GET | `/api/me` | Authenticated | Return current authenticated user (`id`, `name`, `email`, `role`) |
+| GET | `/api/me/notifications` | Authenticated | List unread notifications for the current user |
+| PATCH | `/api/me/notifications/{notification_id}/read` | Authenticated | Mark a user notification as read |
 
-## Testing
+### Seats
+| Method | Endpoint | Access | Description |
+|--------|----------|--------|-------------|
+| GET | `/api/seats/available` | Public | Get seats with `is_available` and `is_active` for `start_time`–`end_time` |
+| POST | `/api/seats/` | Admin | Create a new seat |
+| PATCH | `/api/seats/{seat_id}/toggle` | Admin | Toggle active status or schedule a maintenance window (`maintenance_start`, `maintenance_end`), cancelling overlapping bookings and notifying users |
+
+### Reservations
+| Method | Endpoint | Access | Description |
+|--------|----------|--------|-------------|
+| POST | `/api/reservations/` | Authenticated | Create single or recurring (`daily` / `weekly`, max 30) reservation |
+| GET | `/api/reservations/` | Admin | List all reservations (`skip`, `limit` pagination) |
+| GET | `/api/reservations/my` | Authenticated | List current user's reservations (`skip`, `limit` pagination) |
+| DELETE | `/api/reservations/{reservation_id}/cancel` | Admin | Cancel any reservation and notify the owner |
+| PATCH | `/api/reservations/{reservation_id}/my-cancel` | Authenticated | Cancel own `pending` or `confirmed` reservation |
+| PATCH | `/api/reservations/{reservation_id}/checkin` | Authenticated | Check in within ±15 minutes of reservation start time |
+
+### Admin & Help Desk
+| Method | Endpoint | Access | Description |
+|--------|----------|--------|-------------|
+| GET | `/api/admin/analytics` | Admin | Reservation status breakdown, top 5 popular desks, and zone occupancy by office |
+| POST | `/api/chat/` | Authenticated (20 req/min) | Query the office knowledge base via RAG |
+
+## Security Highlights
+
+- **Strict Secret Enforcement** — Startup fails fast if `SECRET_KEY` is missing, shorter than 32 characters, or left as a placeholder; `DATABASE_URL` and `ADMIN_PASSWORD` likewise have no hardcoded fallback defaults.
+- **HttpOnly Cookie Authentication** — JWTs (validated against `HS256`/`HS384`/`HS512`) are issued exclusively in `HttpOnly`, `SameSite=lax` cookies with configurable `COOKIE_SECURE`.
+- **RBAC Dependencies** — `get_current_user` and `require_admin` enforce authentication and admin authorization across protected endpoints.
+- **Sliding-Window Rate Limiting** — Thread-safe per-IP rate limiters protect `/api/login` (20/min), `/api/register` (10/min), and `/api/chat/` (20/min).
+- **UTC Normalization & Atomic Locking** — All incoming timestamps are normalized to UTC via `to_utc()`, and seat booking uses `SELECT ... FOR UPDATE` row locking and single-transaction commits for recurring series.
+- **Hardened CORS** — Wildcard origins (`*`) are filtered out of `ALLOWED_ORIGINS`, restricting `allow_credentials=True` to explicit origins, methods, and headers.
+
+## Testing & Verification
+
+### Backend Tests (`pytest`)
+Tests run against an isolated in-memory SQLite database and do not require PostgreSQL:
 
 ```bash
 cd backend
 pytest test_reservations.py -v
 ```
 
-Tests use an in-memory SQLite database and do not require PostgreSQL.
+Covers 7 test suites: time-range validation, overbooking collision prevention, maintenance window UTC timezone handling, auth & cookie flags, RBAC & malformed JWT rejection, atomic recurring reservations & inactive seat checks, and check-in/cancel state transitions.
+
+### Frontend Checks
+```bash
+cd seat-reservation
+npx tsc --noEmit
+npm run lint
+npm run build
+```
 
 ## License
 
-This project is for educational and portfolio purposes.
+This project is intended for educational and portfolio purposes.
