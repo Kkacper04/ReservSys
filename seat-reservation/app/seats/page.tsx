@@ -5,9 +5,13 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import {
   AlertTriangle,
+  Armchair,
   Building2,
   CalendarClock,
   Check,
+  DoorClosed,
+  Headphones,
+  Laptop,
   LayoutGrid,
   Map as MapIcon,
   Monitor,
@@ -91,6 +95,144 @@ function formatReadableRange(startStr: string, endStr: string): string {
     month: "short",
   });
   return `${datePart} ${startTime} – ${endDatePart} ${endTime}`;
+}
+
+interface DeskTypeMeta {
+  label: string;
+  Icon: typeof Armchair;
+  badgeAvailableClass: string;
+  iconBoxAvailableClass: string;
+}
+
+const DESK_TYPE_META: Record<string, DeskTypeMeta> = {
+  standard: {
+    label: "Standard",
+    Icon: Armchair,
+    badgeAvailableClass: "bg-[#F7F6F2] border-[#E4E2DC] text-[#6B6A65]",
+    iconBoxAvailableClass: "bg-[#F7F6F2] border-[#E4E2DC] text-[#6B6A65]",
+  },
+  booth: {
+    label: "Booth",
+    Icon: Headphones,
+    badgeAvailableClass: "bg-[#F1EFE9] border-[#CFCBC2] text-[#161615]",
+    iconBoxAvailableClass: "bg-[#F1EFE9] border-[#CFCBC2] text-[#161615]",
+  },
+  private: {
+    label: "Private",
+    Icon: DoorClosed,
+    badgeAvailableClass:
+      "bg-[#161615]/[0.06] border-[#CFCBC2] text-[#161615] font-semibold",
+    iconBoxAvailableClass: "bg-[#161615]/[0.06] border-[#CFCBC2] text-[#161615]",
+  },
+};
+
+function getDeskTypeMeta(deskType: string): DeskTypeMeta {
+  return (
+    DESK_TYPE_META[deskType.toLowerCase()] ?? {
+      label: deskType,
+      Icon: Armchair,
+      badgeAvailableClass: "bg-[#F7F6F2] border-[#E4E2DC] text-[#6B6A65]",
+      iconBoxAvailableClass: "bg-[#F7F6F2] border-[#E4E2DC] text-[#6B6A65]",
+    }
+  );
+}
+
+interface SeatCardAppearance {
+  statusLabel: string;
+  cardClasses: string;
+  stripClass: string;
+  dotClass: string;
+  statusTextClass: string;
+  dividerClass: string;
+  badgeClass: string;
+  iconBoxClass: string;
+  monitorChipClass: string;
+  laptopChipClass: string;
+}
+
+function getSeatCardAppearance(
+  seat: OfficeMapSeat,
+  isSelected: boolean,
+  isMine: boolean,
+  deskMeta: DeskTypeMeta
+): SeatCardAppearance {
+  if (!seat.is_active) {
+    return {
+      statusLabel: "Maintenance",
+      cardClasses:
+        "bg-[#F1EFE9] border-[#DDD9CE] text-[#9A9890] cursor-not-allowed",
+      stripClass: "bg-[#CFCBC2]",
+      dotClass: "bg-[#9A9890]",
+      statusTextClass: "text-[#6B6A65]",
+      dividerClass: "border-[#DDD9CE]",
+      badgeClass: "bg-[#E8E5DC]/70 border-[#DDD9CE] text-[#6B6A65]",
+      iconBoxClass: "bg-[#E8E5DC]/70 border-[#DDD9CE] text-[#9A9890]",
+      monitorChipClass: "bg-[#E8E5DC]/60 border-[#DDD9CE] text-[#6B6A65]",
+      laptopChipClass: "bg-[#E8E5DC]/40 border-[#DDD9CE] text-[#9A9890]",
+    };
+  }
+
+  if (isSelected) {
+    return {
+      statusLabel: "Selected",
+      cardClasses:
+        "bg-[#1B4D3E] border-[#143B2F] text-white ring-2 ring-[#B9D5C9] shadow-[0_6px_16px_rgba(27,77,62,0.22)] cursor-pointer",
+      stripClass: "bg-[#B9D5C9]",
+      dotClass: "bg-[#B9D5C9]",
+      statusTextClass: "text-[#DCEAE3]",
+      dividerClass: "border-white/15",
+      badgeClass: "bg-white/15 border-white/20 text-white",
+      iconBoxClass: "bg-white/15 border-white/20 text-white",
+      monitorChipClass: "bg-white/15 border-white/25 text-white",
+      laptopChipClass: "bg-white/10 border-white/15 text-[#DCEAE3]",
+    };
+  }
+
+  if (isMine) {
+    return {
+      statusLabel: "Your booking",
+      cardClasses:
+        "bg-[#EEF2F8] border-[#C2D1E5] text-[#1E3A5F] cursor-not-allowed",
+      stripClass: "bg-[#4B6991]",
+      dotClass: "bg-[#4B6991]",
+      statusTextClass: "text-[#4B6991]",
+      dividerClass: "border-[#C2D1E5]/75",
+      badgeClass: "bg-white/75 border-[#C2D1E5] text-[#1E3A5F]",
+      iconBoxClass: "bg-white/75 border-[#C2D1E5] text-[#4B6991]",
+      monitorChipClass: "bg-white/80 border-[#C2D1E5] text-[#1E3A5F]",
+      laptopChipClass: "bg-white/60 border-[#C2D1E5]/80 text-[#4B6991]",
+    };
+  }
+
+  if (!seat.is_available) {
+    return {
+      statusLabel: "Occupied",
+      cardClasses:
+        "bg-[#FDF1F0] border-[#EFC8C4] text-[#9E2A2B] cursor-not-allowed",
+      stripClass: "bg-[#C85A5B]",
+      dotClass: "bg-[#9E2A2B]",
+      statusTextClass: "text-[#9E2A2B]",
+      dividerClass: "border-[#EFC8C4]/80",
+      badgeClass: "bg-white/75 border-[#EFC8C4] text-[#9E2A2B]",
+      iconBoxClass: "bg-white/75 border-[#EFC8C4] text-[#B85D5E]",
+      monitorChipClass: "bg-white/80 border-[#EFC8C4] text-[#9E2A2B]",
+      laptopChipClass: "bg-white/60 border-[#EFC8C4]/80 text-[#B85D5E]",
+    };
+  }
+
+  return {
+    statusLabel: "Available",
+    cardClasses:
+      "bg-white border-[#E4E2DC] text-[#161615] hover:border-[#1B4D3E] hover:bg-[#FAF9F6] hover:shadow-[0_3px_10px_rgba(27,77,62,0.08)] cursor-pointer",
+    stripClass: "bg-[#1B4D3E]/70 group-hover:bg-[#1B4D3E]",
+    dotClass: "bg-[#1B4D3E]",
+    statusTextClass: "text-[#1B4D3E]",
+    dividerClass: "border-[#E4E2DC]",
+    badgeClass: deskMeta.badgeAvailableClass,
+    iconBoxClass: deskMeta.iconBoxAvailableClass,
+    monitorChipClass: "bg-[#ECF4F0] border-[#B9D5C9] text-[#164234]",
+    laptopChipClass: "bg-[#F7F6F2] border-[#E4E2DC] text-[#6B6A65]",
+  };
 }
 
 export default function SeatsPage() {
@@ -766,38 +908,19 @@ export default function SeatsPage() {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8 gap-3">
                   {zoneSeats.map((seat) => {
                     const isSelected = selectedSeat === seat.id;
                     const isMine = mySeatIds.has(seat.id);
                     const isDisabled = !seat.is_active || !seat.is_available;
-
-                    let cardClasses =
-                      "bg-white border-[#E4E2DC] text-[#161615] hover:border-[#1B4D3E] hover:bg-[#FAF9F6] cursor-pointer";
-                    let statusLabel = seat.desk_type;
-                    let statusClasses = "text-[#6B6A65]";
-
-                    if (!seat.is_active) {
-                      cardClasses =
-                        "bg-[#F1EFE9] border-[#DDD9CE] text-[#9A9890] cursor-not-allowed";
-                      statusLabel = "Maintenance";
-                      statusClasses = "text-[#9A9890]";
-                    } else if (isSelected) {
-                      cardClasses =
-                        "bg-[#1B4D3E] border-[#143B2F] text-white ring-2 ring-[#B9D5C9] cursor-pointer";
-                      statusLabel = "Selected";
-                      statusClasses = "text-[#DCEAE3]";
-                    } else if (isMine) {
-                      cardClasses =
-                        "bg-[#EEF2F8] border-[#C2D1E5] text-[#1E3A5F] cursor-not-allowed";
-                      statusLabel = "Your booking";
-                      statusClasses = "text-[#4B6991]";
-                    } else if (!seat.is_available) {
-                      cardClasses =
-                        "bg-[#FDF1F0] border-[#EFC8C4] text-[#9E2A2B] cursor-not-allowed";
-                      statusLabel = "Occupied";
-                      statusClasses = "text-[#B85D5E]";
-                    }
+                    const deskMeta = getDeskTypeMeta(seat.desk_type);
+                    const DeskIcon = deskMeta.Icon;
+                    const appearance = getSeatCardAppearance(
+                      seat,
+                      isSelected,
+                      isMine,
+                      deskMeta
+                    );
 
                     return (
                       <button
@@ -814,35 +937,79 @@ export default function SeatsPage() {
                               ? "You already reserved this desk"
                               : !seat.is_available
                                 ? "Occupied for selected range"
-                                : `Select desk ${seat.seat_number}`
+                                : `Select ${deskMeta.label.toLowerCase()} desk ${seat.seat_number}`
                         }
-                        className={`relative text-left p-3.5 rounded-xl border transition-all flex flex-col justify-between min-h-[96px] ${cardClasses}`}
+                        className={`group relative overflow-hidden text-left pl-3.5 pr-2.5 py-2.5 rounded-xl border transition-all flex flex-col justify-between min-h-[116px] ${appearance.cardClasses}`}
                       >
-                        <div className="flex items-start justify-between gap-2">
-                          <span className="font-mono text-lg font-semibold tracking-tight tabular-nums">
-                            {seat.seat_number}
-                          </span>
-                          {seat.has_monitor && seat.is_active && (
+                        <span
+                          aria-hidden="true"
+                          className={`absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full transition-colors ${appearance.stripClass}`}
+                        />
+
+                        <div className="flex items-start justify-between gap-1.5">
+                          <div className="flex items-center gap-1.5 min-w-0">
                             <span
-                              title="Monitor included"
-                              className={`p-1 rounded-md ${
-                                isSelected
-                                  ? "bg-white/15 text-white"
-                                  : "bg-[#F7F6F2] text-[#6B6A65]"
-                              }`}
+                              aria-hidden="true"
+                              className={`w-1.5 h-1.5 rounded-full shrink-0 ${appearance.dotClass}`}
+                            />
+                            <span className="font-mono text-base font-semibold tracking-tight tabular-nums leading-none">
+                              {seat.seat_number}
+                            </span>
+                          </div>
+                          <span
+                            title={deskMeta.label}
+                            className={`w-6 h-6 rounded-md border flex items-center justify-center shrink-0 transition-colors ${appearance.iconBoxClass}`}
+                          >
+                            <DeskIcon size={12} strokeWidth={1.9} />
+                          </span>
+                        </div>
+
+                        <div className="mt-2.5 flex flex-col items-start gap-1.5">
+                          <span
+                            className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border leading-none ${appearance.badgeClass}`}
+                          >
+                            {deskMeta.label}
+                          </span>
+                          {seat.has_monitor ? (
+                            <span
+                              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10px] font-medium leading-none ${appearance.monitorChipClass}`}
                             >
-                              <Monitor size={13} strokeWidth={2} />
+                              <Monitor
+                                size={10}
+                                strokeWidth={2}
+                                className="shrink-0"
+                              />
+                              <span>Monitor</span>
+                            </span>
+                          ) : (
+                            <span
+                              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10px] font-medium leading-none ${appearance.laptopChipClass}`}
+                            >
+                              <Laptop
+                                size={10}
+                                strokeWidth={2}
+                                className="shrink-0"
+                              />
+                              <span>Laptop-ready</span>
                             </span>
                           )}
                         </div>
 
-                        <div className="mt-3 flex items-center justify-between gap-1">
+                        <div
+                          className={`mt-2.5 pt-2 border-t flex items-center justify-between gap-1 ${appearance.dividerClass}`}
+                        >
                           <span
-                            className={`text-[11px] font-medium capitalize truncate ${statusClasses}`}
+                            className={`text-[11px] font-medium truncate ${appearance.statusTextClass}`}
                           >
-                            {statusLabel}
+                            {appearance.statusLabel}
                           </span>
-                          {isSelected && <Check size={14} strokeWidth={2.5} />}
+                          {isSelected && (
+                            <Check
+                              size={13}
+                              strokeWidth={2.5}
+                              className="shrink-0"
+                            />
+                          )}
                         </div>
                       </button>
                     );
@@ -854,8 +1021,8 @@ export default function SeatsPage() {
         </div>
       )}
 
-      <div className="sticky bottom-4 z-20">
-        <div className="rs-card px-5 py-4 shadow-[0_8px_24px_rgba(22,22,21,0.09)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="sticky bottom-4 z-20 sm:pr-44 pb-14 sm:pb-0">
+        <div className="rs-card px-5 py-4 shadow-[0_8px_24px_rgba(22,22,21,0.09)] flex flex-col md:flex-row md:items-center justify-between gap-4">
           {selectedSeatObj ? (
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
               <div className="flex items-center gap-2">
