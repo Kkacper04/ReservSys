@@ -1,6 +1,9 @@
-import React from "react";
+"use client";
 
-interface Seat {
+import React, { useMemo, useState } from "react";
+import { Monitor } from "lucide-react";
+
+export interface OfficeMapSeat {
   id: number;
   seat_number: string;
   is_available: boolean;
@@ -12,179 +15,559 @@ interface Seat {
 }
 
 interface OfficeMapProps {
-  seats: Seat[];
+  seats: OfficeMapSeat[];
   selectedSeat: number | null;
-  onSelectSeat: (id: number) => void;
+  onSelectSeat: (id: number | null) => void;
   selectedOffice: string;
+  mySeatIds?: Set<number>;
 }
 
-export default function OfficeMap({ seats, selectedSeat, onSelectSeat, selectedOffice }: OfficeMapProps) {
-  // Filter seats for the selected office
-  const officeSeats = seats.filter(s => s.office_name === selectedOffice);
+interface PositionedSeat {
+  seat: OfficeMapSeat;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
 
-  // Helper to determine coordinates based on seat number 
-  const getCoordinates = (seatNumber: string) => {
-    const row = seatNumber.charAt(0).toUpperCase();
-    const num = parseInt(seatNumber.slice(1), 10);
-    
-    // Grid system: block size
-    const blockWidth = 100;
-    const blockHeight = 80;
-    const paddingX = 80;
-    const paddingY = 80;
+interface ZoneBox {
+  zone: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  seats: PositionedSeat[];
+  isPrivate: boolean;
+}
 
-    let x = 0;
-    let y = 0;
+function compareSeatNumbers(a: OfficeMapSeat, b: OfficeMapSeat) {
+  const rowA = a.seat_number.replace(/\d+/g, "");
+  const rowB = b.seat_number.replace(/\d+/g, "");
+  if (rowA !== rowB) return rowA.localeCompare(rowB);
+  const numA = parseInt(a.seat_number.replace(/\D+/g, ""), 10) || 0;
+  const numB = parseInt(b.seat_number.replace(/\D+/g, ""), 10) || 0;
+  return numA - numB;
+}
 
-    // Custom layout rules
-    if (row === "A") {
-      x = paddingX + (num - 1) * blockWidth;
-      y = paddingY; // Top row
-    } else if (row === "B") {
-      x = paddingX + (num - 1) * blockWidth;
-      y = paddingY + blockHeight * 1.5; // Second row (Open Space)
-    } else if (row === "C") {
-      // Quiet Zone - bottom left
-      x = paddingX + (num - 1) * blockWidth;
-      y = paddingY + blockHeight * 4.5; 
-    } else if (row === "D") {
-      // Private Rooms - right side column
-      x = paddingX + 9 * blockWidth; 
-      y = paddingY + (num - 1) * (blockHeight * 1.5);
-    } else {
-      // Fallback
-      x = paddingX + (num - 1) * blockWidth;
-      y = paddingY + 6 * blockHeight;
+export default function OfficeMap({
+  seats,
+  selectedSeat,
+  onSelectSeat,
+  selectedOffice,
+  mySeatIds,
+}: OfficeMapProps) {
+  const [hoveredSeat, setHoveredSeat] = useState<OfficeMapSeat | null>(null);
+
+  const officeSeats = useMemo(
+    () => seats.filter((s) => s.office_name === selectedOffice),
+    [seats, selectedOffice]
+  );
+
+  const layout = useMemo(() => {
+    const outerPad = 36;
+    const zoneGap = 24;
+    const deskW = 86;
+    const deskH = 62;
+    const colGap = 16;
+    const rowGap = 22;
+    const zonePadX = 24;
+    const zonePadTop = 48;
+    const zonePadBottom = 24;
+    const colsPerRow = 8;
+
+    const privateZoneNames = new Set(
+      officeSeats
+        .filter((s) => s.zone.toLowerCase().includes("private"))
+        .map((s) => s.zone)
+    );
+
+    const mainZoneOrder = Array.from(
+      new Set(
+        officeSeats
+          .filter((s) => !privateZoneNames.has(s.zone))
+          .map((s) => s.zone)
+      )
+    );
+
+    const privateZoneList = Array.from(privateZoneNames);
+
+    const mainColumnWidth =
+      zonePadX * 2 + colsPerRow * deskW + (colsPerRow - 1) * colGap;
+    const privateSuiteW = 148;
+    const privateSuiteH = 88;
+    const privateColumnWidth =
+      privateZoneList.length > 0 ? zonePadX * 2 + privateSuiteW : 0;
+
+    const zones: ZoneBox[] = [];
+    let currentY = outerPad + 28;
+
+    for (const zoneName of mainZoneOrder) {
+      const zoneSeats = officeSeats
+        .filter((s) => s.zone === zoneName)
+        .sort(compareSeatNumbers);
+
+      const rowsMap = new Map<string, OfficeMapSeat[]>();
+      for (const s of zoneSeats) {
+        const prefix = s.seat_number.match(/^[A-Za-z]+/)?.[0] || "Z";
+        const group = rowsMap.get(prefix) || [];
+        group.push(s);
+        rowsMap.set(prefix, group);
+      }
+
+      const positioned: PositionedSeat[] = [];
+      let rowIndex = 0;
+
+      for (const [, groupSeats] of rowsMap) {
+        groupSeats.forEach((seat, idx) => {
+          const wrappedRow = Math.floor(idx / colsPerRow);
+          const col = idx % colsPerRow;
+          const x = outerPad + zonePadX + col * (deskW + colGap);
+          const y =
+            currentY + zonePadTop + (rowIndex + wrappedRow) * (deskH + rowGap);
+          positioned.push({ seat, x, y, w: deskW, h: deskH });
+        });
+        rowIndex += Math.max(1, Math.ceil(groupSeats.length / colsPerRow));
+      }
+
+      const zoneHeight =
+        zonePadTop +
+        rowIndex * deskH +
+        Math.max(0, rowIndex - 1) * rowGap +
+        zonePadBottom;
+
+      zones.push({
+        zone: zoneName,
+        x: outerPad,
+        y: currentY,
+        w: mainColumnWidth,
+        h: zoneHeight,
+        seats: positioned,
+        isPrivate: false,
+      });
+
+      currentY += zoneHeight + zoneGap;
     }
 
-    return { x, y };
+    const mainTotalHeight =
+      zones.length > 0 ? currentY - zoneGap + outerPad : outerPad * 2 + 240;
+
+    let privateTotalHeight = 0;
+    if (privateZoneList.length > 0) {
+      const privateX =
+        mainZoneOrder.length > 0 ? outerPad + mainColumnWidth + zoneGap : outerPad;
+      let privY = outerPad + 28;
+
+      for (const zoneName of privateZoneList) {
+        const zoneSeats = officeSeats
+          .filter((s) => s.zone === zoneName)
+          .sort(compareSeatNumbers);
+
+        const positioned: PositionedSeat[] = zoneSeats.map((seat, idx) => ({
+          seat,
+          x: privateX + zonePadX,
+          y: privY + zonePadTop + idx * (privateSuiteH + 16),
+          w: privateSuiteW,
+          h: privateSuiteH,
+        }));
+
+        const zoneHeight =
+          zonePadTop +
+          zoneSeats.length * privateSuiteH +
+          Math.max(0, zoneSeats.length - 1) * 16 +
+          zonePadBottom;
+
+        zones.push({
+          zone: zoneName,
+          x: privateX,
+          y: privY,
+          w: privateColumnWidth,
+          h: zoneHeight,
+          seats: positioned,
+          isPrivate: true,
+        });
+
+        privY += zoneHeight + zoneGap;
+      }
+      privateTotalHeight = privY - zoneGap + outerPad;
+    }
+
+    const svgWidth =
+      outerPad * 2 +
+      (mainZoneOrder.length > 0 ? mainColumnWidth : 0) +
+      (mainZoneOrder.length > 0 && privateZoneList.length > 0 ? zoneGap : 0) +
+      privateColumnWidth;
+
+    const svgHeight = Math.max(mainTotalHeight, privateTotalHeight, 360);
+
+    return { zones, svgWidth: Math.max(svgWidth, 560), svgHeight };
+  }, [officeSeats]);
+
+  const availableCount = officeSeats.filter(
+    (s) => s.is_active && s.is_available
+  ).length;
+
+  const getSeatPalette = (seat: OfficeMapSeat) => {
+    const isSelected = selectedSeat === seat.id;
+    const isMine = mySeatIds?.has(seat.id) ?? false;
+
+    if (!seat.is_active) {
+      return {
+        fill: "#F1EFE9",
+        stroke: "#DDD9CE",
+        text: "#9A9890",
+        subtext: "#9A9890",
+        status: "Maintenance",
+        clickable: false,
+      };
+    }
+    if (isSelected) {
+      return {
+        fill: "#1B4D3E",
+        stroke: "#143B2F",
+        text: "#FFFFFF",
+        subtext: "#DCEAE3",
+        status: "Selected",
+        clickable: true,
+      };
+    }
+    if (isMine) {
+      return {
+        fill: "#EEF2F8",
+        stroke: "#8CA8CE",
+        text: "#1E3A5F",
+        subtext: "#4B6991",
+        status: "Your Booking",
+        clickable: false,
+      };
+    }
+    if (!seat.is_available) {
+      return {
+        fill: "#FDF1F0",
+        stroke: "#EFC8C4",
+        text: "#9E2A2B",
+        subtext: "#B85D5E",
+        status: "Occupied",
+        clickable: false,
+      };
+    }
+    return {
+      fill: "#FFFFFF",
+      stroke: "#CFCBC2",
+      text: "#161615",
+      subtext: "#6B6A65",
+      status: "Available",
+      clickable: true,
+    };
   };
 
-  // Determine the bounding box to automatically size the SVG
-  let maxX = 800;
-  let maxY = 600;
-  officeSeats.forEach(seat => {
-    const { x, y } = getCoordinates(seat.seat_number);
-    if (x > maxX) maxX = x;
-    if (y > maxY) maxY = y;
-  });
-
-  const svgWidth = Math.max(maxX + 200, 1100);
-  const svgHeight = Math.max(maxY + 150, 700);
+  if (officeSeats.length === 0) {
+    return (
+      <div className="rs-card p-10 text-center text-sm text-[#6B6A65]">
+        No desks match your current filters in {selectedOffice || "this office"}.
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full overflow-x-auto bg-zinc-900/50 rounded-xl border border-zinc-700 shadow-inner p-4 custom-scrollbar">
-      <div className="min-w-[800px] relative">
-        <svg 
-          width="100%" 
-          height="100%" 
-          viewBox={`0 0 ${svgWidth} ${svgHeight}`} 
-          className="w-full h-auto drop-shadow-xl"
-        >
-          {/* Floor background */}
-          <rect x="20" y="20" width={svgWidth - 40} height={svgHeight - 40} rx="20" fill="#1f2937" stroke="#374151" strokeWidth="4" />
-          
-          {/* Zone Backgrounds */}
-          <rect x="40" y="40" width={svgWidth - 280} height={svgHeight * 0.45} rx="15" fill="#111827" opacity="0.5" />
-          <text x="60" y="70" fill="#4b5563" fontSize="20" fontWeight="bold" letterSpacing="2">OPEN SPACE</text>
+    <div className="rs-card overflow-hidden">
+      <div className="px-5 py-3.5 border-b border-[#E4E2DC] bg-[#FAF9F6] flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="font-mono text-xs uppercase tracking-wider text-[#6B6A65]">
+            {selectedOffice} Floor Plan
+          </span>
+          <span className="text-xs text-[#9A9890]">·</span>
+          <span className="text-xs font-medium text-[#161615] tabular-nums">
+            {availableCount} of {officeSeats.length} available
+          </span>
+        </div>
 
-          <rect x="40" y={svgHeight * 0.55} width={svgWidth - 280} height={svgHeight * 0.35} rx="15" fill="#27272a" opacity="0.4" />
-          <text x="60" y={svgHeight * 0.55 + 30} fill="#71717a" fontSize="20" fontWeight="bold" letterSpacing="2">QUIET ZONE</text>
+        <div className="flex flex-wrap items-center gap-4 text-xs text-[#6B6A65]">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-sm bg-white border border-[#CFCBC2]" />
+            Available
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-sm bg-[#1B4D3E] border border-[#143B2F]" />
+            Selected
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-sm bg-[#EEF2F8] border border-[#8CA8CE]" />
+            Your Booking
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-sm bg-[#FDF1F0] border border-[#EFC8C4]" />
+            Occupied
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-sm bg-[#F1EFE9] border border-[#DDD9CE]" />
+            Maintenance
+          </span>
+          <span className="inline-flex items-center gap-1 text-[#161615]">
+            <Monitor size={13} strokeWidth={2} />
+            Monitor
+          </span>
+        </div>
+      </div>
 
-          <rect x={svgWidth - 220} y="40" width="180" height={svgHeight - 80} rx="15" fill="#450a0a" opacity="0.3" />
-          <text x={svgWidth - 200} y="70" fill="#991b1b" fontSize="20" fontWeight="bold" letterSpacing="2" writingMode="vertical-rl">PRIVATE ROOMS</text>
-
-          {officeSeats.map((seat) => {
-            const { x, y } = getCoordinates(seat.seat_number);
-            const isSelected = selectedSeat === seat.id;
-            const isUnavailable = !seat.is_available;
-            const isInactive = !seat.is_active;
-
-            let rectFill = "#374151"; // Default Gray
-            let rectStroke = "#4b5563";
-            let textColor = "#d1d5db";
-
-            if (isInactive) {
-              rectFill = "#111827";
-              rectStroke = "#1f2937";
-              textColor = "#4b5563";
-            } else if (isUnavailable) {
-              rectFill = "#7f1d1d"; // Dark Red
-              rectStroke = "#991b1b";
-              textColor = "#fca5a5";
-            } else if (isSelected) {
-              rectFill = "#059669"; // Emerald
-              rectStroke = "#34d399";
-              textColor = "#ffffff";
-            } else {
-              rectFill = "#1f2937"; // Available
-              rectStroke = "#4b5563";
-              textColor = "#e5e7eb";
-            }
-
-            return (
-              <g 
-                key={seat.id} 
-                transform={`translate(${x}, ${y})`}
-                onClick={() => {
-                  if (seat.is_active && seat.is_available) {
-                    onSelectSeat(seat.id);
-                  }
-                }}
-                className={seat.is_active && seat.is_available ? "cursor-pointer" : "cursor-not-allowed"}
-                style={{ transition: "all 0.3s ease" }}
+      <div className="p-4 sm:p-6 overflow-x-auto bg-[#F7F6F2]/60">
+        <div className="min-w-[680px]">
+          <svg
+            viewBox={`0 0 ${layout.svgWidth} ${layout.svgHeight}`}
+            className="w-full h-auto select-none"
+            role="img"
+            aria-label={`${selectedOffice} office floor plan`}
+          >
+            <defs>
+              <pattern
+                id="arch-grid"
+                width="24"
+                height="24"
+                patternUnits="userSpaceOnUse"
               >
-                <rect 
-                  width="80" 
-                  height="60" 
-                  rx="8" 
-                  fill={rectFill} 
-                  stroke={isSelected ? "#34d399" : rectStroke} 
-                  strokeWidth={isSelected ? "3" : "2"}
-                  className={`transition-all duration-300 ${seat.is_active && seat.is_available && !isSelected ? "hover:fill-zinc-600 hover:stroke-zinc-400" : ""}`}
+                <path
+                  d="M 24 0 L 0 0 0 24"
+                  fill="none"
+                  stroke="#ECEAE2"
+                  strokeWidth="0.75"
                 />
-                
-                
-                <text x="40" y="35" textAnchor="middle" fill={textColor} fontSize="22" fontWeight="bold" className="pointer-events-none">
-                  {seat.seat_number}
+              </pattern>
+              <pattern
+                id="maint-hatch"
+                width="8"
+                height="8"
+                patternTransform="rotate(45 0 0)"
+                patternUnits="userSpaceOnUse"
+              >
+                <line
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="8"
+                  stroke="#DDD9CE"
+                  strokeWidth="2"
+                />
+              </pattern>
+            </defs>
+
+            <rect
+              x="12"
+              y="12"
+              width={layout.svgWidth - 24}
+              height={layout.svgHeight - 24}
+              rx="12"
+              fill="#FFFFFF"
+              stroke="#CFCBC2"
+              strokeWidth="2"
+            />
+            <rect
+              x="16"
+              y="16"
+              width={layout.svgWidth - 32}
+              height={layout.svgHeight - 32}
+              rx="10"
+              fill="url(#arch-grid)"
+            />
+
+            <text
+              x="36"
+              y="38"
+              fill="#6B6A65"
+              fontSize="11"
+              fontWeight="600"
+              letterSpacing="1.6"
+              style={{ fontFamily: "var(--font-jetbrains), monospace" }}
+            >
+              {selectedOffice.toUpperCase()} · ARCHITECTURAL FLOORPLAN
+            </text>
+
+            {layout.zones.map((zone) => (
+              <g key={zone.zone}>
+                <rect
+                  x={zone.x}
+                  y={zone.y}
+                  width={zone.w}
+                  height={zone.h}
+                  rx="8"
+                  fill={zone.isPrivate ? "#FAF9F6" : "#FFFFFF"}
+                  fillOpacity="0.9"
+                  stroke="#E4E2DC"
+                  strokeWidth="1.5"
+                />
+
+                <text
+                  x={zone.x + 20}
+                  y={zone.y + 27}
+                  fill="#161615"
+                  fontSize="12"
+                  fontWeight="600"
+                  letterSpacing="1"
+                  style={{ fontFamily: "var(--font-jetbrains), monospace" }}
+                >
+                  {zone.zone.toUpperCase()}
                 </text>
 
-             
-                <text x="40" y="50" textAnchor="middle" fill={textColor} opacity="0.6" fontSize="10" fontWeight="bold" className="pointer-events-none uppercase">
-                  {seat.desk_type}
-                </text>
+                <line
+                  x1={zone.x + 20}
+                  y1={zone.y + 36}
+                  x2={zone.x + zone.w - 20}
+                  y2={zone.y + 36}
+                  stroke="#EFECE6"
+                  strokeWidth="1"
+                />
 
-               
-                {seat.has_monitor && seat.is_active && (
-                  <g transform="translate(60, -10)">
-                    <rect width="20" height="20" rx="4" fill="#0f172a" stroke="#10b981" strokeWidth="1" />
-                    <svg width="12" height="12" x="4" y="4" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                      <line x1="8" y1="21" x2="16" y2="21"></line>
-                      <line x1="12" y1="17" x2="12" y2="21"></line>
-                    </svg>
-                  </g>
-                )}
+                {zone.seats.map(({ seat, x, y, w, h }) => {
+                  const palette = getSeatPalette(seat);
+                  const isSelected = selectedSeat === seat.id;
+                  const isHovered = hoveredSeat?.id === seat.id;
 
-               
-                {isUnavailable && seat.is_active && (
-                  <g transform="translate(10, -10)">
-                     <rect width="60" height="20" rx="6" fill="#4c0519" stroke="#9f1239" strokeWidth="1" />
-                     <text x="30" y="14" textAnchor="middle" fill="#fda4af" fontSize="10" fontWeight="bold">OCCUPIED</text>
-                  </g>
-                )}
+                  return (
+                    <g
+                      key={seat.id}
+                      transform={`translate(${x}, ${y})`}
+                      role={palette.clickable ? "button" : undefined}
+                      tabIndex={palette.clickable ? 0 : -1}
+                      aria-label={`Desk ${seat.seat_number}, ${seat.zone}, ${seat.desk_type}, ${palette.status}${seat.has_monitor ? ", includes monitor" : ""}`}
+                      aria-pressed={palette.clickable ? isSelected : undefined}
+                      onClick={() => {
+                        if (!palette.clickable) return;
+                        onSelectSeat(isSelected ? null : seat.id);
+                      }}
+                      onKeyDown={(e) => {
+                        if (!palette.clickable) return;
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          onSelectSeat(isSelected ? null : seat.id);
+                        }
+                      }}
+                      onMouseEnter={() => setHoveredSeat(seat)}
+                      onMouseLeave={() =>
+                        setHoveredSeat((cur) => (cur?.id === seat.id ? null : cur))
+                      }
+                      className={
+                        palette.clickable
+                          ? "cursor-pointer outline-none"
+                          : "cursor-not-allowed outline-none"
+                      }
+                    >
+                      {zone.isPrivate && (
+                        <path
+                          d={`M -12 16 A 14 14 0 0 1 2 30`}
+                          fill="none"
+                          stroke="#CFCBC2"
+                          strokeWidth="1.2"
+                          strokeDasharray="3 2"
+                        />
+                      )}
 
-               
-                {isInactive && (
-                  <g transform="translate(0, 20) rotate(-15)">
-                     <rect width="80" height="20" rx="2" fill="#000000" opacity="0.8" />
-                     <text x="40" y="14" textAnchor="middle" fill="#ef4444" fontSize="10" fontWeight="black" letterSpacing="1">MAINTENANCE</text>
-                  </g>
-                )}
+                      {isSelected && (
+                        <rect
+                          x="-4"
+                          y="-4"
+                          width={w + 8}
+                          height={h + 8}
+                          rx="9"
+                          fill="none"
+                          stroke="#B9D5C9"
+                          strokeWidth="3"
+                        />
+                      )}
+
+                      <rect
+                        width={w}
+                        height={h}
+                        rx="6"
+                        fill={
+                          isHovered && palette.clickable && !isSelected
+                            ? "#F4F8F6"
+                            : palette.fill
+                        }
+                        stroke={
+                          isHovered && palette.clickable && !isSelected
+                            ? "#1B4D3E"
+                            : palette.stroke
+                        }
+                        strokeWidth={isSelected ? "2" : "1.25"}
+                      />
+
+                      {!seat.is_active && (
+                        <rect
+                          width={w}
+                          height={h}
+                          rx="6"
+                          fill="url(#maint-hatch)"
+                          opacity="0.7"
+                        />
+                      )}
+
+                      {seat.has_monitor && seat.is_active && (
+                        <g transform={`translate(${w / 2 - 12}, 7)`}>
+                          <rect
+                            width="24"
+                            height="4"
+                            rx="1.5"
+                            fill={isSelected ? "#B9D5C9" : "#1B4D3E"}
+                          />
+                        </g>
+                      )}
+
+                      <text
+                        x={w / 2}
+                        y={h / 2 + 2}
+                        textAnchor="middle"
+                        fill={palette.text}
+                        fontSize={zone.isPrivate ? "17" : "16"}
+                        fontWeight="600"
+                        style={{
+                          fontFamily: "var(--font-jetbrains), monospace",
+                        }}
+                      >
+                        {seat.seat_number}
+                      </text>
+
+                      <text
+                        x={w / 2}
+                        y={h - 11}
+                        textAnchor="middle"
+                        fill={palette.subtext}
+                        fontSize="9.5"
+                        fontWeight="500"
+                        letterSpacing="0.5"
+                      >
+                        {!seat.is_active
+                          ? "MAINTENANCE"
+                          : !seat.is_available
+                            ? mySeatIds?.has(seat.id)
+                              ? "YOURS"
+                              : "OCCUPIED"
+                            : seat.desk_type.toUpperCase()}
+                      </text>
+                    </g>
+                  );
+                })}
               </g>
-            );
-          })}
-        </svg>
+            ))}
+          </svg>
+        </div>
+      </div>
+
+      <div className="px-5 py-2.5 border-t border-[#E4E2DC] bg-[#FAF9F6] flex items-center justify-between text-xs text-[#6B6A65] min-h-[38px]">
+        {hoveredSeat ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="font-mono font-semibold text-[#161615]">
+              Desk {hoveredSeat.seat_number}
+            </span>
+            <span>{hoveredSeat.zone}</span>
+            <span className="capitalize">{hoveredSeat.desk_type}</span>
+            <span>
+              {hoveredSeat.has_monitor ? "External monitor included" : "No monitor"}
+            </span>
+            <span className="font-medium text-[#161615]">
+              · {getSeatPalette(hoveredSeat).status}
+            </span>
+          </div>
+        ) : (
+          <span>Hover or focus any desk to inspect specifications. Click an available desk to select.</span>
+        )}
       </div>
     </div>
   );
